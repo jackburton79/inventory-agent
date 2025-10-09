@@ -17,7 +17,7 @@
 
 
 std::string
-Base64Encode(std::string string)
+Base64Encode(const std::string& string)
 {
 	BIO* b64f = BIO_new(BIO_f_base64());
 	if (b64f == NULL)

@@ -10,6 +10,6 @@
 
 #include <string>
 
-std::string Base64Encode(std::string string);
+std::string Base64Encode(const std::string& string);
 
 #endif // UTILS_H

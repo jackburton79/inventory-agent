@@ -107,7 +107,7 @@ XML::GetFirstChildElementText(const tinyxml2::XMLElement* element, const std::st
 
 const tinyxml2::XMLElement*
 XML::GetElementByName(const tinyxml2::XMLNode& node,
-						std::string elementName,
+						const std::string& elementName,
 						int matchMode)
 {
 	ElementFinderByName textFinder(elementName, matchMode);
@@ -119,8 +119,8 @@ XML::GetElementByName(const tinyxml2::XMLNode& node,
 
 const tinyxml2::XMLElement*
 XML::GetElementByAttribute(const tinyxml2::XMLNode& node,
-							std::string attributeName,
-							std::string attributeValue,
+							const std::string& attributeName,
+							const std::string& attributeValue,
 							int matchMode)
 {
 	ElementFinderByAttribute attributeFinder(attributeName, attributeValue, matchMode);
