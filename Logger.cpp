@@ -95,6 +95,5 @@ Logger::_DoLog(int level, const char* string)
 				::syslog(level|LOG_PID|LOG_CONS|LOG_USER, "%s", (const char* const)string);
 			break;
 	}
-
 }
 
