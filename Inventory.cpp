@@ -1203,10 +1203,9 @@ Inventory::_HandleResponse(HTTP& httpObject)
 	Logger::LogFormat(LOG_ERR, "Server replied %s", responseHeader2.StatusString().c_str());
 	Logger::LogFormat(LOG_ERR, "%s", responseHeader2.ToString().c_str());
 
-	size_t contentLength = responseHeader2.ContentLength();
-	const char* resultData = responseHeader2.Data();
-
 	if (responseHeader2.ContentType() == "application/xml") {
+		size_t contentLength = responseHeader2.ContentLength();
+		const char* resultData = responseHeader2.Data();
 		Logger::Log(LOG_INFO, "Inventory::Send(): Deserialize XML... ");
 		tinyxml2::XMLDocument reply;
 		bool deserialized = XML::Deserialize(resultData, contentLength, reply);
