@@ -20,12 +20,18 @@ HTTPResponseHeader::HTTPResponseHeader()
 
 HTTPResponseHeader::HTTPResponseHeader(int code, const std::string& text,
 		const int majVersion, const int minVersion)
+	:
+	fCode(0),
+	fData(NULL)
 {
 	SetStatusLine(code, text, majVersion, minVersion);
 }
 
 
 HTTPResponseHeader::HTTPResponseHeader(const HTTPResponseHeader& header)
+	:
+	fCode(0),
+	fData(NULL)
 {
 	*this = header;
 }
@@ -33,6 +39,7 @@ HTTPResponseHeader::HTTPResponseHeader(const HTTPResponseHeader& header)
 
 HTTPResponseHeader::~HTTPResponseHeader()
 {
+	delete[] fData;
 }
 
 
