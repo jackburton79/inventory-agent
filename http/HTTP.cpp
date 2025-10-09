@@ -179,7 +179,7 @@ HTTP::Request(const HTTPRequestHeader& header, const void* data, const size_t da
 	::sscanf(replyString.c_str(), "HTTP/1.%*d %03d", &code);
 	try {
 		fLastResponse.Clear();
-		fLastResponse.SetStatusLine(code, replyString.c_str());
+		fLastResponse.SetStatusLine(code, replyString);
 		while (_ReadLineFromSocket(replyString, fSocket)) {
 			size_t pos = replyString.find(":");
 			std::string value = replyString.substr(pos + 1, std::string::npos);
