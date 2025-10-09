@@ -14,6 +14,7 @@ namespace tinyxml2 {
 	class XMLElement;
 }
 
+class HTTP;
 class Machine;
 class Inventory {
 public:
@@ -51,6 +52,7 @@ private:
 	void _AddMonitorsInfo();
 
 	bool _WriteProlog(tinyxml2::XMLDocument& document) const;
+	bool _HandleResponse(HTTP& http);
 
 	tinyxml2::XMLDocument* fDocument;
 	tinyxml2::XMLElement* fContent;

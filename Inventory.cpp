@@ -339,33 +339,7 @@ Inventory::Send(const char* serverUrl)
 
 	delete[] inventoryData;
 
-	const HTTPResponseHeader& responseHeader2 = httpObject.LastResponse();
-	bool statusOk = responseHeader2.StatusCode() == HTTP_OK;
-	if (!responseHeader2.HasContentLength()) {
-		if (!statusOk) {
-			Logger::Log(LOG_ERR, "Sending inventory failed");
-			return false;
-		}
-	}
-
-	Logger::LogFormat(LOG_ERR, "Server replied %s", responseHeader2.StatusString().c_str());
-	Logger::LogFormat(LOG_ERR, "%s", responseHeader2.ToString().c_str());
-
-	size_t contentLength = responseHeader2.ContentLength();
-	const char* resultData = responseHeader2.Data();
-
-	if (responseHeader2.ContentType() == "application/xml") {
-		Logger::Log(LOG_INFO, "Inventory::Send(): Deserialize XML... ");
-		tinyxml2::XMLDocument reply;
-		bool deserialized = XML::Deserialize(resultData, contentLength, reply);
-		if (!deserialized) {
-			Logger::Log(LOG_ERR, "failed to deserialize XML");
-			return false;
-		}
-		Logger::Log(LOG_INFO, "Server replied:");
-		Logger::Log(LOG_INFO, XML::ToString(reply).c_str());
-	}
-
+	bool statusOk = _HandleResponse(httpObject);
 	if (statusOk)
 		Logger::Log(LOG_INFO, "Inventory::Send(): Inventory was accepted!");
 	else
@@ -1164,6 +1138,39 @@ Inventory::_WriteProlog(tinyxml2::XMLDocument& document) const
 	request->LinkEndChild(query);
 
 	return true;
+}
+
+
+bool
+Inventory::_HandleResponse(HTTP& httpObject)
+{
+	const HTTPResponseHeader& responseHeader2 = httpObject.LastResponse();
+	bool statusOk = responseHeader2.StatusCode() == HTTP_OK;
+	if (!responseHeader2.HasContentLength()) {
+		if (!statusOk) {
+			Logger::Log(LOG_ERR, "Sending inventory failed");
+			return false;
+		}
+	}
+
+	Logger::LogFormat(LOG_ERR, "Server replied %s", responseHeader2.StatusString().c_str());
+	Logger::LogFormat(LOG_ERR, "%s", responseHeader2.ToString().c_str());
+
+	size_t contentLength = responseHeader2.ContentLength();
+	const char* resultData = responseHeader2.Data();
+
+	if (responseHeader2.ContentType() == "application/xml") {
+		Logger::Log(LOG_INFO, "Inventory::Send(): Deserialize XML... ");
+		tinyxml2::XMLDocument reply;
+		bool deserialized = XML::Deserialize(resultData, contentLength, reply);
+		if (!deserialized) {
+			Logger::Log(LOG_ERR, "failed to deserialize XML");
+			return false;
+		}
+		Logger::Log(LOG_INFO, "Server replied:");
+		Logger::Log(LOG_INFO, XML::ToString(reply).c_str());
+	}
+	return statusOk;
 }
 
 
