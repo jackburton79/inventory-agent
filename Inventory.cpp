@@ -658,7 +658,6 @@ Inventory::_AddCPUsInfo()
 		name->LinkEndChild(
 			fDocument->NewText(cpuInfo.fields["type"].c_str()));
 		cpu->LinkEndChild(name);
-
 	}
 	Logger::Log(LOG_DEBUG, "\tAdded CPUs Info!");
 }
@@ -838,7 +837,7 @@ Inventory::_AddHardwareInfo()
 		}
 	}
 
-    Component& osInfo = gComponents["OS"] ;
+	Component& osInfo = gComponents["OS"] ;
 	tinyxml2::XMLElement* description = fDocument->NewElement("DESCRIPTION");
 	std::string descriptionString;
 	descriptionString.append(osInfo.fields["architecture"]).append("/");
@@ -1127,7 +1126,6 @@ Inventory::_AddVideosInfo()
 		tinyxml2::XMLElement* resolution = fDocument->NewElement("RESOLUTION");
 		resolution->LinkEndChild(fDocument->NewText(info.fields["resolution"].c_str()));
 		video->LinkEndChild(resolution);
-
 	}
 	Logger::Log(LOG_DEBUG, "\tAdded Video info!");
 }
