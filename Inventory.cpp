@@ -90,6 +90,55 @@ Inventory::Clear()
 }
 
 
+std::string
+Inventory::GenerateDeviceID() const
+{
+	// Try system UUID.
+	std::string deviceID = gComponents["SYSTEM"].fields["uuid"];
+
+	// If it's empty, use the MAC address of the first NIC
+	if (deviceID.length() <= 1) {
+		NetworkRoster roster;
+		NetworkInterface interface;
+		unsigned int cookie = 0;
+		while (roster.GetNextInterface(&cookie, interface) == 0) {
+			if (!interface.IsLoopback()) {
+				deviceID = interface.HardwareAddress();
+				deviceID.erase(std::remove(deviceID.begin(), deviceID.end(), ':'),
+						deviceID.end());
+				break;
+			}
+		}
+	}
+
+	// If it's empty (unlikely), just use the hostname
+	if (deviceID == "")
+		deviceID = gComponents["SYSTEM"].fields["hostname"];
+
+	struct tm biosDate;
+	if (Configuration::Get()->UseCurrentTimeInDeviceID()) {
+		time_t rawtime = time(NULL);
+		localtime_r(&rawtime, &biosDate);
+	} else {
+		std::string biosDateString = gComponents["BIOS"].fields["release_date"];
+		// On some machines, this can be empty. So use an harcoded
+		// value, since we need a correct date for the device id
+		if (biosDateString.length() <= 1)
+			biosDateString = "01/01/2017";
+		::strptime(biosDateString.c_str(), "%m/%d/%Y", &biosDate);
+	}
+
+	// DeviceID needs to have a date appended in this very format,
+	// otherwise OCSInventoryNG will reject the inventory
+	char dateString[256];
+	::strftime(dateString, sizeof(dateString), "-%Y-%m-%d-00-00-00", &biosDate);
+
+	deviceID.append(dateString);
+
+	return deviceID;
+}
+
+
 bool
 Inventory::Build(bool noSoftware)
 {
@@ -1173,51 +1222,3 @@ Inventory::_HandleResponse(HTTP& httpObject)
 	return statusOk;
 }
 
-
-std::string
-Inventory::GenerateDeviceID() const
-{
-	// Try system UUID.
-	std::string deviceID = gComponents["SYSTEM"].fields["uuid"];
-
-	// If it's empty, use the MAC address of the first NIC
-	if (deviceID.length() <= 1) {
-		NetworkRoster roster;
-		NetworkInterface interface;
-		unsigned int cookie = 0;
-		while (roster.GetNextInterface(&cookie, interface) == 0) {
-			if (!interface.IsLoopback()) {
-				deviceID = interface.HardwareAddress();
-				deviceID.erase(std::remove(deviceID.begin(), deviceID.end(), ':'),
-						deviceID.end());
-				break;
-			}
-		}
-	}
-
-	// If it's empty (unlikely), just use the hostname
-	if (deviceID == "")
-		deviceID = gComponents["SYSTEM"].fields["hostname"];
-
-	struct tm biosDate;
-	if (Configuration::Get()->UseCurrentTimeInDeviceID()) {
-		time_t rawtime = time(NULL);
-		localtime_r(&rawtime, &biosDate);
-	} else {
-		std::string biosDateString = gComponents["BIOS"].fields["release_date"];
-		// On some machines, this can be empty. So use an harcoded
-		// value, since we need a correct date for the device id
-		if (biosDateString.length() <= 1)
-			biosDateString = "01/01/2017";
-		::strptime(biosDateString.c_str(), "%m/%d/%Y", &biosDate);
-	}
-
-	// DeviceID needs to have a date appended in this very format,
-	// otherwise OCSInventoryNG will reject the inventory
-	char dateString[256];
-	::strftime(dateString, sizeof(dateString), "-%Y-%m-%d-00-00-00", &biosDate);
-
-	deviceID.append(dateString);
-
-	return deviceID;
-}
