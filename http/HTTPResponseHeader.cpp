@@ -89,7 +89,7 @@ HTTPResponseHeader::Clear()
 }
 
 
-char*
+const char*
 HTTPResponseHeader::Data() const
 {
 	return fData;

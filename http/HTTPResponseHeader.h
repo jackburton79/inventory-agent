@@ -28,7 +28,7 @@ public:
 
 	virtual void Clear();
 
-	char* Data() const;
+	const char* Data() const;
 	void SetData(char* data);
 
 	HTTPResponseHeader& operator=(const HTTPResponseHeader& header);

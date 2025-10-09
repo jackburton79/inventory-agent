@@ -248,7 +248,7 @@ Inventory::Send(const char* serverUrl)
 			contentType.c_str(), static_cast<unsigned long>(contentLength));
 
 		// responseHeader keeps the ownership
-		char* resultData = responseHeader.Data();
+		const char* resultData = responseHeader.Data();
 
 		// TODO: OCS Inventory always use "application/x-compressed" but
 		// sends a non compressed XML if we didn't compress prolog
@@ -352,7 +352,7 @@ Inventory::Send(const char* serverUrl)
 	Logger::LogFormat(LOG_ERR, "%s", responseHeader2.ToString().c_str());
 
 	size_t contentLength = responseHeader2.ContentLength();
-	char* resultData = responseHeader2.Data();
+	const char* resultData = responseHeader2.Data();
 
 	if (responseHeader2.ContentType() == "application/xml") {
 		Logger::Log(LOG_INFO, "Inventory::Send(): Deserialize XML... ");
