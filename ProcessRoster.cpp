@@ -17,7 +17,7 @@
 
 
 static bool
-IsNumber(std::string string)
+IsNumber(const std::string& string)
 {
 	return !string.empty()
 			&& string.find_first_not_of("0123456789") == std::string::npos;
