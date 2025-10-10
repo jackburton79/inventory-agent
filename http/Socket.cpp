@@ -30,7 +30,7 @@ Socket::Socket()
 
 Socket::~Socket()
 {
-    Socket::Close();
+	Socket::Close();
 }
 
 
@@ -51,7 +51,7 @@ Socket::Close()
 		::close(fFD);
 		fFD = -1;
 	}
-    fHostName = "";
+	fHostName = "";
 }
 
 
@@ -111,7 +111,7 @@ Socket::Connect(const char* hostName, const int port)
 	if (hostEnt == NULL)
 		return h_errno;
 
-    fHostName = hostName;
+	fHostName = hostName;
 	return Connect(hostEnt, port);
 }
 

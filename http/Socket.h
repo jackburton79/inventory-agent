@@ -20,7 +20,7 @@ public:
 	virtual void Close();
 
 	int FD() const;
-    std::string HostName() const;
+	std::string HostName() const;
 	bool IsOpened() const;
 
 	virtual int Connect(const struct sockaddr *address, socklen_t addrLen);
@@ -34,7 +34,7 @@ public:
 
 private:
 	int fFD;
-    std::string fHostName;
+	std::string fHostName;
 };
 
 #endif // SOCKET_H
