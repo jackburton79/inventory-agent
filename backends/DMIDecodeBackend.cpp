@@ -139,7 +139,7 @@ DMIExtractor::ExtractEntry(const std::string& context) const
 
 
 string_map
-DMIExtractor::ExtractHandle(std::string handle) const
+DMIExtractor::ExtractHandle(const std::string& handle) const
 {
 	int numericHandle = strtol(handle.c_str(), NULL, 0);
 	dmi_db::const_iterator i = fDMIDB.find(numericHandle);
@@ -318,7 +318,7 @@ DMIDecodeBackend::_ExtractDataFromDMIDB(dmi_db dmiDb)
 			|| ramSlot.fields.find("speed") != ramSlot.fields.end()) {
 				std::ostringstream s;
 				s << "MEMORY" << slotNum;
-				gComponents.Merge(s.str().c_str(), ramSlot);
+				gComponents.Merge(s.str(), ramSlot);
 				slotNum++;
 		}
 	}

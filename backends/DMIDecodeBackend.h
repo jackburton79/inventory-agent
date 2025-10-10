@@ -35,7 +35,7 @@ public:
 	DMIExtractor(const dmi_db& db);
 	int CountEntries(const std::string& context) const;
 	std::vector<string_map> ExtractEntry(const std::string& context) const;
-	string_map ExtractHandle(std::string handle) const;
+	string_map ExtractHandle(const std::string& handle) const;
 private:
 	dmi_db fDMIDB;
 };
