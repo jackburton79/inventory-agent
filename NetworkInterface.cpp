@@ -230,7 +230,7 @@ std::string
 NetworkInterface::DefaultGateway() const
 {
 	std::list<route_info> routeInfo;
-	if (_GetRoutes(routeInfo) <= 0)
+	if (_GetRoutes(routeInfo) != 0)
 		return "";
 
 	std::list<route_info>::const_iterator i;
@@ -344,7 +344,7 @@ static bool
 ParseRoutes(struct nlmsghdr* nlHdr, route_info* rtInfo,
 	const char* interfaceName)
 {
-	rtmsg* rtMsg = (rtmsg*)NLMSG_DATA(nlHdr);
+	rtmsg* rtMsg = reinterpret_cast<rtmsg*>(NLMSG_DATA(nlHdr));
 
 	// If the route is not for AF_INET or does not belong to main routing table then return.
 	if ((rtMsg->rtm_family != AF_INET) || (rtMsg->rtm_table != RT_TABLE_MAIN))
@@ -359,13 +359,13 @@ ParseRoutes(struct nlmsghdr* nlHdr, route_info* rtInfo,
 				if_indextoname(*(int*)RTA_DATA(rtAttr), rtInfo->ifName);
 				break;
 			case RTA_GATEWAY:
-				rtInfo->gateway = *(in_addr*)RTA_DATA(rtAttr);
+				rtInfo->gateway = *reinterpret_cast<in_addr*>(RTA_DATA(rtAttr));
 				break;
 			case RTA_PREFSRC:
-				rtInfo->srcAddr = *(in_addr*)RTA_DATA(rtAttr);
+				rtInfo->srcAddr = *reinterpret_cast<in_addr*>(RTA_DATA(rtAttr));
 				break;
 			case RTA_DST:
-				rtInfo->dstAddr = *(in_addr*)RTA_DATA(rtAttr);
+				rtInfo->dstAddr = *reinterpret_cast<in_addr*>(RTA_DATA(rtAttr));
 				break;
 			default:
 				break;
@@ -422,7 +422,7 @@ NetworkInterface::_GetRoutes(std::list<route_info>& routeList) const
 #ifdef __linux__
 	int sock = 0;
 	if ((sock = ::socket(PF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE)) < 0)
-		return errno;
+		return -1;
 
 	char msgBuf[kBufSize];
 	::memset(msgBuf, 0, kBufSize);
@@ -438,7 +438,7 @@ NetworkInterface::_GetRoutes(std::list<route_info>& routeList) const
 
 	if (::send(sock, nlMsg, nlMsg->nlmsg_len, 0) < 0) {
 		::close(sock);
-		return errno;
+		return -1;
 	}
 
 	// Read the response
@@ -458,5 +458,6 @@ NetworkInterface::_GetRoutes(std::list<route_info>& routeList) const
 
 	::close(sock);
 #endif
-	return routeList.size();
+	// Success
+	return 0;
 }
