@@ -124,7 +124,7 @@ NetworkInterface::HardwareAddress() const
 	if (_DoRequest(SIOCGIFHWADDR, ifr) != 0)
 		return "";
 
-	struct sockaddr* addr = (struct sockaddr*)&ifr.ifr_hwaddr;
+	struct sockaddr* addr = reinterpret_cast<struct sockaddr*>(&ifr.ifr_hwaddr);
 	std::ostringstream stream;
 	for (size_t i = 0; i < ETHER_ADDR_LEN; i++) {
 		int byte = addr->sa_data[i] & 0xFF;
@@ -157,7 +157,7 @@ NetworkInterface::IPAddress() const
 	if (_DoRequest(SIOCGIFADDR, ifr) != 0)
 		return "";
 
-	struct sockaddr_in* ipaddr = (struct sockaddr_in*)&ifr.ifr_addr;
+	struct sockaddr_in* ipaddr = reinterpret_cast<struct sockaddr_in*>(&ifr.ifr_addr);
 	return inet_ntoa(ipaddr->sin_addr);
 }
 
@@ -170,7 +170,7 @@ NetworkInterface::NetMask() const
 	if (_DoRequest(SIOCGIFNETMASK, ifr) != 0)
 		return "";
 
-	struct sockaddr_in* ipaddr = (struct sockaddr_in*)&ifr.ifr_netmask;
+	struct sockaddr_in* ipaddr = reinterpret_cast<struct sockaddr_in*>(&ifr.ifr_netmask);
 	return inet_ntoa(ipaddr->sin_addr);
 #else
 	return "";
@@ -190,8 +190,8 @@ NetworkInterface::Network() const
 	if (_DoRequest(SIOCGIFADDR, ifrIpAddress) != 0)
 		return "";
 
-	struct sockaddr_in* ipAddr = (struct sockaddr_in*)&ifrIpAddress.ifr_addr;
-	struct sockaddr_in* netMask = (struct sockaddr_in*)&ifrNetMask.ifr_netmask;
+	struct sockaddr_in* ipAddr = reinterpret_cast<struct sockaddr_in*>(&ifrIpAddress.ifr_addr);
+	struct sockaddr_in* netMask = reinterpret_cast<struct sockaddr_in*>(&ifrNetMask.ifr_netmask);
 
 	struct in_addr networkAddress;
 	::memset(&networkAddress, 0, sizeof(networkAddress));
@@ -211,7 +211,7 @@ NetworkInterface::BroadcastAddress() const
 	if (_DoRequest(SIOCGIFBRDADDR, ifr) != 0)
 		return "";
 
-	struct sockaddr_in* ipaddr = (struct sockaddr_in*)&ifr.ifr_broadaddr;
+	struct sockaddr_in* ipaddr = reinterpret_cast<struct sockaddr_in*>(&ifr.ifr_broadaddr);
 	return inet_ntoa(ipaddr->sin_addr);
 }
 
@@ -236,7 +236,7 @@ NetworkInterface::DefaultGateway() const
 	std::list<route_info>::const_iterator i;
 	for (i = routeInfo.begin(); i != routeInfo.end(); i++) {
 		if (i->dstAddr.s_addr == 0)
-			return (char*)inet_ntoa(i->gateway);
+			return reinterpret_cast<char*>(inet_ntoa(i->gateway));
 	}
 
 	return "";
@@ -259,7 +259,7 @@ NetworkInterface::Speed() const
 	struct ifreq ifr;
 	struct ethtool_cmd edata;
 
-	ifr.ifr_data = (char*)&edata;
+	ifr.ifr_data = reinterpret_cast<char*>(&edata);
 
 	edata.cmd = ETHTOOL_GSET;
 
@@ -280,7 +280,7 @@ NetworkInterface::SpeedWithUnit() const
 	struct ifreq ifr;
 	struct ethtool_cmd edata;
 
-	ifr.ifr_data = (char*)&edata;
+	ifr.ifr_data = reinterpret_cast<char*>(&edata);
 
 	edata.cmd = ETHTOOL_GSET;
 
@@ -426,7 +426,7 @@ NetworkInterface::_GetRoutes(std::list<route_info>& routeList) const
 
 	char msgBuf[kBufSize];
 	::memset(msgBuf, 0, kBufSize);
-	struct nlmsghdr* nlMsg = (struct nlmsghdr*)msgBuf;
+	struct nlmsghdr* nlMsg = reinterpret_cast<struct nlmsghdr*>(msgBuf);
 
 	int msgSeq = 0;
 	// Fill in the nlmsg header
