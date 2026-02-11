@@ -40,7 +40,7 @@ Screens::Screens()
 				info.manufacturer = GetManufacturerFromID(edidInfo.manufacturer);
 				info.type = edidInfo.type;
 				info.model = edidInfo.model;
-				info.serial_number = edidInfo.serial_number;
+				info.serial_number = trimmed(edidInfo.serial_number);
 				fItems.push_back(info);
 			}
 		}
