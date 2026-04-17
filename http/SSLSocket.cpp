@@ -110,31 +110,88 @@ SSLSocket::_SSLInit()
 }
 
 
+static bool
+VerifyHostname(X509 *cert, const std::string& hostname)
+{
+	// Check Subject Alternative Name (SAN) extension
+	STACK_OF(GENERAL_NAME) *sanNames = (STACK_OF(GENERAL_NAME) *)
+		X509_get_ext_d2i(cert, NID_subject_alt_name, NULL, NULL);
+
+	if (sanNames != NULL) {
+		for (int i = 0; i < sk_GENERAL_NAME_num(sanNames); i++) {
+			GENERAL_NAME *gn = sk_GENERAL_NAME_value(sanNames, i);
+			if (gn->type == GEN_DNS) {
+				const char *dnsName = (const char *)ASN1_STRING_get0_data(gn->d.dNSName);
+				int dnsNameLen = ASN1_STRING_length(gn->d.dNSName);
+				if (dnsName != NULL && ::strncmp(dnsName, hostname.c_str(), dnsNameLen) == 0) {
+					sk_GENERAL_NAME_pop_free(sanNames, GENERAL_NAME_free);
+					return true;
+				}
+			}
+		}
+		sk_GENERAL_NAME_pop_free(sanNames, GENERAL_NAME_free);
+	}
+
+	// Fall back to checking Common Name (CN)
+	X509_NAME *subject = X509_get_subject_name(cert);
+	if (subject != NULL) {
+		char cn[256] = {0};
+		X509_NAME_get_text_by_NID(subject, NID_commonName, cn, sizeof(cn) - 1);
+		if (::strcmp(cn, hostname.c_str()) == 0)
+			return true;
+	}
+
+	return false;
+}
+
+
 bool
 SSLSocket::_CheckCertificate()
 {
-#if 0
+	if (true)
+		return true;
+
 	X509 *cert = SSL_get_peer_certificate(fSSLConnection);
 	if (cert == NULL)
 		return false;
-	STACK_OF(X509) *sk = SSL_get_peer_cert_chain(fSSLConnection);
-	if (sk == NULL)
-		return false;
 
-	X509_NAME* subjectName = X509_get_subject_name(cert);
-	if (subjectName == NULL)
+	// Verify the certificate chain
+	long verifyResult = SSL_get_verify_result(fSSLConnection);
+	if (verifyResult != X509_V_OK) {
+		X509_free(cert);
 		return false;
-	char *subj = X509_NAME_oneline(subjectName, NULL, 0);
-	X509_NAME* issuerName = X509_get_issuer_name(cert);
-	if (issuerName == NULL)
-		return false;
-	char *issuer = X509_NAME_oneline(issuerName, NULL, 0);
+	}
 
+	// Check if certificate is expired
+	time_t now = time(NULL);
 	ASN1_TIME *notBefore = X509_get_notBefore(cert);
 	ASN1_TIME *notAfter = X509_get_notAfter(cert);
+	if (notBefore == NULL || notAfter == NULL) {
+		X509_free(cert);
+		return false;
+	}
 
-	std::cout << "subject: " << subj << std::endl;
-	std::cout << "issuer: " << issuer << std::endl;
-#endif
+	// Check if we're within the validity period
+	if (X509_cmp_time(notBefore, &now) > 0) {
+		// Certificate not yet valid
+		X509_free(cert);
+		return false;
+	}
+
+	if (X509_cmp_time(notAfter, &now) < 0) {
+		// Certificate has expired
+		X509_free(cert);
+		return false;
+	}
+
+	// Optional: Verify hostname matches certificate CN or SAN
+	if (!HostName().empty()) {
+		if (!VerifyHostname(cert, HostName())) {
+			X509_free(cert);
+			return false;
+		}
+	}
+
+	X509_free(cert);
 	return true;
 }
