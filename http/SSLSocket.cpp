@@ -121,7 +121,7 @@ VerifyHostname(X509 *cert, const std::string& hostname)
 		for (int i = 0; i < sk_GENERAL_NAME_num(sanNames); i++) {
 			GENERAL_NAME *gn = sk_GENERAL_NAME_value(sanNames, i);
 			if (gn->type == GEN_DNS) {
-				const char *dnsName = (const char *)ASN1_STRING_get0_data(gn->d.dNSName);
+				const char *dnsName = reinterpret_cast<const char *>(ASN1_STRING_get0_data(gn->d.dNSName));
 				int dnsNameLen = ASN1_STRING_length(gn->d.dNSName);
 				if (dnsName != NULL && ::strncmp(dnsName, hostname.c_str(), dnsNameLen) == 0) {
 					sk_GENERAL_NAME_pop_free(sanNames, GENERAL_NAME_free);
