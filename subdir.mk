@@ -19,6 +19,7 @@ LOCAL_CPP_SRCS = \
 ../Support.cpp \
 ../UsersRoster.cpp \
 ../VolumeRoster.cpp \
+../WebServer.cpp \
 ../XML.cpp \
 ../ZLibCompressor.cpp
 

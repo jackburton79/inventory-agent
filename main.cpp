@@ -237,6 +237,7 @@ main(int argc, char **argv)
 	try {
 		Agent agent;
 		agent.Run();
+
 #if DEBUG
 		Configuration::Get()->Print();
 		std::cout << "Agent String: " << Agent::AgentString() << std::endl;
