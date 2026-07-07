@@ -126,6 +126,7 @@ WebServer::InventoryHandler(mg_connection* conn, void* cbdata)
 {
 	Logger::Log(LOG_INFO, "InventoryHandler called");
 
+	// TODO: update the inventory, then send
 	mg_printf(conn, "HTTP/1.1 200 OK\r\n"
 		"Content-Type: application/json\r\n"
 		"\r\n"
