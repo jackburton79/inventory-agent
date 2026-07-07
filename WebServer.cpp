@@ -38,12 +38,14 @@ WebServer::Start(int port, const std::string& certificateFile)
 		nullptr
 	};
 
+	Logger::Log(LOG_INFO, "WebServer: starting...");
 	fContext = mg_start(nullptr, nullptr, options);
-
 	if (!fContext) {
 		Logger::Log(LOG_ERR, "WebServer: Cannot create context");
 		return false;
 	}
+
+	Logger::LogFormat(LOG_INFO, "WebServer: listening on port %s", portStr);
 
 	mg_set_request_handler(fContext, "/", RootHandler, this);
 	mg_set_request_handler(fContext, "/status", StatusHandler, this);
@@ -56,6 +58,8 @@ WebServer::Start(int port, const std::string& certificateFile)
 void
 WebServer::Stop()
 {
+	Logger::Log(LOG_INFO, "WebServer: stopping...");
+
 	if (fContext) {
 		mg_stop(fContext);
 		fContext = nullptr;
