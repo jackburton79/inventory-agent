@@ -4,6 +4,9 @@ extern "C" {
 
 #include "WebServer.h"
 
+#include <cstring>
+
+#include "Agent.h"
 #include "Logger.h"
 
 WebServer::WebServer()
@@ -22,8 +25,11 @@ WebServer::~WebServer()
 bool
 WebServer::Start(int port, const std::string& certificateFile)
 {
+#if WEB_USE_SSL
 	std::string portStr = std::to_string(port) + "s";
-
+#else
+	std::string portStr = std::to_string(port);
+#endif
 	const char* options[] = {
 		"listening_ports",
 		portStr.c_str(),
@@ -39,7 +45,8 @@ WebServer::Start(int port, const std::string& certificateFile)
 		return false;
 	}
 
-	mg_set_request_handler(fContext, "/health", HealthHandler, this);
+	mg_set_request_handler(fContext, "/", RootHandler, this);
+	mg_set_request_handler(fContext, "/status", StatusHandler, this);
 	mg_set_request_handler(fContext, "/inventory", InventoryHandler, this);
 
 	return true;
@@ -57,14 +64,54 @@ WebServer::Stop()
 
 
 int
-WebServer::HealthHandler(mg_connection* conn, void* cbdata)
+WebServer::RootHandler(mg_connection* conn, void* cbdata)
 {
-	Logger::Log(LOG_INFO, "HealthHandler called");
+	Logger::Log(LOG_INFO, "RootHandler called");
 
-	mg_printf(conn, "HTTP/1.1 200 OK\r\n"
+	const char* html =
+		"<html>"
+		"<head><title>Inventory Agent</title></head>"
+		"<body>"
+		"<h1>Inventory Agent</h1>"
+		"<ul>"
+		"<li>\"/status\"Status</a></li>"
+		"<li>\"/inventory\"Inventory</a></li>"
+		"<li>/now\">Run inventory now</a></li>"
+		"</ul>"
+		"</body>"
+		"</html>";
+
+	mg_printf(conn,
+		"HTTP/1.1 200 OK\r\n"
+		"Content-Type: text/html\r\n"
+		"Content-Length: %zu\r\n"
+		"\r\n%s",
+		::strlen(html), html);
+
+	return 200;
+}
+
+
+int
+WebServer::StatusHandler(mg_connection* conn, void* cbdata)
+{
+	Logger::Log(LOG_INFO, "StatusHandler called");
+
+	std::string json =
+		"{"
+		"\"status\":\"running\","
+		"\"version\":\"" +
+		Agent::Version() +
+		"\""
+		"}";
+
+	mg_printf(conn,
+		"HTTP/1.1 200 OK\r\n"
 		"Content-Type: application/json\r\n"
-		"\r\n"
-		"{\"status\":\"ok\"}");
+		"Content-Length: %zu\r\n"
+		"\r\n%s",
+		json.size(),
+		json.c_str());
 
 	return 200;
 }

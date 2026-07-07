@@ -16,8 +16,8 @@ public:
 	void Stop();
 
 private:
-	static int HealthHandler(mg_connection* conn, void* cbdata);
-
+	static int RootHandler(mg_connection* conn, void* cbdata);
+	static int StatusHandler(mg_connection* conn, void* cbdata);
 	static int InventoryHandler(mg_connection* conn, void* cbdata);
 
 private:
