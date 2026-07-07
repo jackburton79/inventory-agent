@@ -9,6 +9,7 @@ RM := rm -rf
 -include backends/subdir.mk
 -include http/subdir.mk
 -include Inventory/subdir.mk
+-include libs/civetweb-1.16/src/subdir.mk
 -include libs/tinyxml2/subdir.mk
 -include subdir.mk
 -include objects.mk
