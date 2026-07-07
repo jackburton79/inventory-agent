@@ -6,8 +6,8 @@
  */
 
 
-#include <Components.h>
 #include "Agent.h"
+#include "Components.h"
 #include "Configuration.h"
 #include "Inventory.h"
 #include "Logger.h"
@@ -18,6 +18,8 @@
 #include "backends/MemInfoBackend.h"
 #include "backends/OSInfoBackend.h"
 #include "backends/UnameBackend.h"
+
+#include "WebServer.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -80,6 +82,15 @@ Agent::Run()
 	} else {
 		inventory.Send(config->ServerURL().c_str());
 	}
+
+
+	// Start the web server
+	WebServer server;
+
+	server.Start(8443, "/etc/inventory-agent/server.pem");
+
+	while (true)
+		sleep(60);
 }
 
 
