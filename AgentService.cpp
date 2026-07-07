@@ -10,8 +10,16 @@
 
 AgentService::AgentService()
 	:
+	fAgent(nullptr),
 	fRunning(false)
 {
+	fAgent = new Agent();
+}
+
+
+AgentService::~AgentService()
+{
+	delete fAgent;
 }
 
 
@@ -40,10 +48,9 @@ AgentService::_InventoryLoop()
 {
 	while (fRunning) {
 		try {
-			Agent agent;
-			agent.RunInventory(true);
+			fAgent->RunInventory(true);
 
-			std::string xml = agent.LastInventoryXML();
+			std::string xml = fAgent->LastInventoryXML();
 
 			Logger::Log(LOG_INFO, "Inventory cache updated");
 		} catch (std::exception& ex) {
