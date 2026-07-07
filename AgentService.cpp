@@ -39,6 +39,8 @@ AgentService::Run()
 
 	while (fRunning)
 		sleep(60);
+
+	server.Stop();
 #endif
 }
 
@@ -58,6 +60,6 @@ AgentService::_InventoryLoop()
 		}
 
 		// TODO: Make this configurable
-		std::this_thread::sleep_for(std::chrono::hours(1));
+		std::this_thread::sleep_for(std::chrono::hours(6));
 	}
 }
