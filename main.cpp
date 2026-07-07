@@ -198,63 +198,18 @@ HandleArgs(int argc, char **argv)
 }
 
 
-static void
-Daemonize()
-{
-	pid_t processID = ::fork();
-	if (processID < 0) {
-		Logger::Log(LOG_ERR, "Failed to daemonize. Exiting...");
-		// Return failure in exit status
-		::exit(1);
-	}
-
-	// Exit the parent process
-	if (processID > 0)
-		::exit(0);
-
-	::umask(0);
-	if (::chdir("/") < 0)
-		; // Ignore
-
-	//set new session
-	pid_t sid = ::setsid();
-	if (sid < 0)
-		::exit(1);
-
-	::close(STDIN_FILENO);
-	::close(STDOUT_FILENO);
-	::close(STDERR_FILENO);
-}
-
-
 int
 main(int argc, char **argv)
 {
 	HandleArgs(argc, argv);
 
-	if (Configuration::Get()->KeyValue("DAEMONIZE") == CONF_VALUE_TRUE) {
-		Daemonize();
-		AgentService service;
-		service.Run();
-		return 0;
-	}
-
 	try {
+		AgentService service;
 		Configuration* config = Configuration::Get();
-		bool noSoftware = (config->KeyValue(CONF_NO_SOFTWARE) == CONF_VALUE_TRUE);
-		Agent agent;
-		agent.RunInventory(noSoftware);
-		if (config->KeyValue(CONF_OUTPUT_STDOUT) == CONF_VALUE_TRUE)
-			agent.PrintToStream();
-		else if (config->LocalInventory()) {
-			std::string fullFileName = config->OutputFileName();
-			if (fullFileName[fullFileName.length() - 1] == '/')
-				fullFileName.append(config->DeviceID()).append(".xml");
-			agent.SaveToFile(fullFileName);
-		} else {
-			agent.SendToServer(config->ServerURL());
-		}
-
+		if (config->KeyValue("DAEMONIZE") == CONF_VALUE_TRUE)
+			service.Start();
+		else
+			service.RunOneShot();
 #if DEBUG
 		config->Print();
 		std::cout << "Agent String: " << Agent::AgentString() << std::endl;

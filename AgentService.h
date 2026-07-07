@@ -1,3 +1,4 @@
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
@@ -11,13 +12,14 @@ public:
 	AgentService();
 	~AgentService();
 
-	void Run();
+	void Start();
+	void RunOneShot();
 	void ScheduleInventory();
 
 private:
+
 	void _InventoryLoop();
 
-private:
 	std::thread fInventoryThread;
 
 	std::condition_variable fCondition;
@@ -28,5 +30,5 @@ private:
 	WebServer* fServer;
 	Agent* fAgent;
 
-	bool fRunning;
+	std::atomic_bool fRunning;
 };
