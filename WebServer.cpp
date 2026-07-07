@@ -80,7 +80,7 @@ WebServer::RootHandler(mg_connection* conn, void* cbdata)
 		"<ul>"
 		"<li>\"/status\"Status</a></li>"
 		"<li>\"/inventory\"Inventory</a></li>"
-		"<li>/now\">Run inventory now</a></li>"
+		"<li>/now\"Run inventory now</a></li>"
 		"</ul>"
 		"</body>"
 		"</html>";

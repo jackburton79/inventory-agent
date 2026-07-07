@@ -21,29 +21,35 @@
 
 #include "WebServer.h"
 
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
 #include <unistd.h>
 
 
-const char* kVersion = "2.1.0";
+const char* kVersion = "3.0.0";
 
 std::string Agent::sAgentString;
 
 
 Agent::Agent()
+	:
+	fInventory(nullptr),
+	fLastUpdate(0)
 {
+	fInventory = new Inventory();
 }
 
 
 Agent::~Agent()
 {
+	delete fInventory;
 }
 
 
 void
-Agent::Run()
+Agent::RunInventory(bool noSoftware)
 {
 	// TODO: Move these away from here
 	DMIDataBackend().Run();
@@ -54,43 +60,48 @@ Agent::Run()
 	MemInfoBackend().Run();
 	UnameBackend().Run();
 
-	Configuration* config = Configuration::Get();
-
-	Inventory inventory;
-	if (!inventory.Initialize())
+	if (!fInventory->Initialize())
 		throw std::runtime_error("Cannot initialize Inventory");
 
-	bool noSoftware = (config->KeyValue(CONF_NO_SOFTWARE) == CONF_VALUE_TRUE);
-	unsigned long waitSeconds = ::strtoul(
-		config->KeyValue(CONF_WAIT_TIME).c_str(), NULL, 10);
-
-	if (waitSeconds > 0) {
-		Logger::LogFormat(LOG_INFO, "Waiting %lu seconds...", waitSeconds);
-		::sleep(waitSeconds);
-	}
-
-	if (!inventory.Build(noSoftware))
+	if (!fInventory->Build(noSoftware))
 		return;
 
-	if (config->KeyValue(CONF_OUTPUT_STDOUT) == CONF_VALUE_TRUE)
-		inventory.Print();
-	else if (config->LocalInventory()) {
-		std::string fullFileName = config->OutputFileName();
-		if (fullFileName[fullFileName.length() - 1] == '/')
-			fullFileName.append(config->DeviceID()).append(".xml");
-		inventory.Save(fullFileName.c_str());
-	} else {
-		inventory.Send(config->ServerURL().c_str());
-	}
+	fLastUpdate = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+}
 
 
-	// Start the web server
-	WebServer server;
+std::string
+Agent::LastInventoryXML() const
+{
+	return fInventory->ToString();
+}
 
-	server.Start(62354, "/etc/inventory-agent/server.pem");
 
-	while (true)
-		sleep(60);
+time_t
+Agent::LastUpdated() const
+{
+	return fLastUpdate;
+}
+
+
+void
+Agent::PrintToStream()
+{
+	fInventory->Print();
+}
+
+
+void
+Agent::SaveToFile(const std::string filePathName)
+{
+	fInventory->Save(filePathName.c_str());
+}
+
+
+void
+Agent::SendToServer(const std::string serverString)
+{
+	fInventory->Send(serverString.c_str());
 }
 
 

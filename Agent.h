@@ -10,12 +10,20 @@
 
 #include <string>
 
+class Inventory;
+
 class Agent {
 public:
 	Agent();
 	~Agent();
 
-	void Run();
+	void RunInventory(bool noSoftware);
+	std::string LastInventoryXML() const;
+	time_t LastUpdated() const;
+
+	void PrintToStream();
+	void SaveToFile(const std::string filePathName);
+	void SendToServer(const std::string serverString);
 
 	static std::string Version();
 	static std::string LegacyAgentString();
@@ -26,6 +34,8 @@ private:
 	void _PrintInventory();
 	void _SendInventory();
 
+	Inventory* fInventory;
+	time_t fLastUpdate;
 	static std::string sAgentString;
 };
 
