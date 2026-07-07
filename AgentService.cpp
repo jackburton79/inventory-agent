@@ -1,15 +1,18 @@
 #include "AgentService.h"
 
 #include <chrono>
+#include <condition_variable>
 #include <mutex>
 #include <unistd.h>
 
 #include "Agent.h"
+#include "Configuration.h"
 #include "Logger.h"
 #include "WebServer.h"
 
 AgentService::AgentService()
 	:
+	fServer(nullptr),
 	fAgent(nullptr),
 	fRunning(false)
 {
@@ -19,6 +22,8 @@ AgentService::AgentService()
 
 AgentService::~AgentService()
 {
+	fServer->Stop();
+	delete fServer;
 	delete fAgent;
 }
 
@@ -26,6 +31,8 @@ AgentService::~AgentService()
 void
 AgentService::Run()
 {
+	fServer = new WebServer();
+
 	fRunning = true;
 
 	fInventoryThread =
@@ -34,14 +41,24 @@ AgentService::Run()
 	// TODO: add configuration
 #if 1
 	// Start the web server
-	WebServer server;
-	server.Start(62354, "");
+	fServer->Start(62354, "");
 
 	while (fRunning)
 		sleep(60);
 
-	server.Stop();
 #endif
+}
+
+
+void
+AgentService::ScheduleInventory()
+{
+	{
+		std::lock_guard lock(fMutex);
+		fInventoryRequested = true;
+	}
+
+	fCondition.notify_one();
 }
 
 
@@ -49,17 +66,26 @@ void
 AgentService::_InventoryLoop()
 {
 	while (fRunning) {
+		std::unique_lock lock(fMutex);
+
+		fCondition.wait(lock,
+			[this]
+			{
+				return fInventoryRequested || !fRunning;
+			});
+
+		if (!fRunning)
+			break;
+
+		fInventoryRequested = false;
+
+		lock.unlock();
+
 		try {
 			fAgent->RunInventory(true);
-
-			std::string xml = fAgent->LastInventoryXML();
-
-			Logger::Log(LOG_INFO, "Inventory cache updated");
+			fAgent->SendToServer(Configuration::Get()->ServerURL());
 		} catch (std::exception& ex) {
 			Logger::Log(LOG_ERR, ex.what());
 		}
-
-		// TODO: Make this configurable
-		std::this_thread::sleep_for(std::chrono::hours(6));
 	}
 }
