@@ -9,7 +9,7 @@ RM := rm -rf
 -include backends/subdir.mk
 -include http/subdir.mk
 -include Inventory/subdir.mk
--include tinyxml2/subdir.mk
+-include libs/tinyxml2/subdir.mk
 -include subdir.mk
 -include objects.mk
 
