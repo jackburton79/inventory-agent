@@ -6,6 +6,7 @@
  */
 
 #include "Agent.h"
+#include "AgentService.h"
 #include "Configuration.h"
 #include "Logger.h"
 
@@ -231,15 +232,31 @@ main(int argc, char **argv)
 {
 	HandleArgs(argc, argv);
 
-	if (Configuration::Get()->KeyValue("DAEMONIZE") == CONF_VALUE_TRUE)
+	if (Configuration::Get()->KeyValue("DAEMONIZE") == CONF_VALUE_TRUE) {
 		Daemonize();
+		AgentService service;
+		service.Run();
+		return 0;
+	}
 
 	try {
+		Configuration* config = Configuration::Get();
+		bool noSoftware = (config->KeyValue(CONF_NO_SOFTWARE) == CONF_VALUE_TRUE);
 		Agent agent;
-		agent.Run();
+		agent.RunInventory(noSoftware);
+		if (config->KeyValue(CONF_OUTPUT_STDOUT) == CONF_VALUE_TRUE)
+			agent.PrintToStream();
+		else if (config->LocalInventory()) {
+			std::string fullFileName = config->OutputFileName();
+			if (fullFileName[fullFileName.length() - 1] == '/')
+				fullFileName.append(config->DeviceID()).append(".xml");
+			agent.SaveToFile(fullFileName);
+		} else {
+			agent.SendToServer(config->ServerURL());
+		}
 
 #if DEBUG
-		Configuration::Get()->Print();
+		config->Print();
 		std::cout << "Agent String: " << Agent::AgentString() << std::endl;
 #endif
 	} catch (std::exception& ex) {

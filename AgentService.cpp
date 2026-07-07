@@ -50,6 +50,7 @@ AgentService::_InventoryLoop()
 			Logger::Log(LOG_ERR, ex.what());
 		}
 
+		// TODO: Make this configurable
 		std::this_thread::sleep_for(std::chrono::hours(1));
 	}
 }
