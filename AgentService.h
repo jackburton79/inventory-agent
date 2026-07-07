@@ -2,9 +2,11 @@
 
 #pragma once
 
+class Agent;
 class AgentService {
 public:
 	AgentService();
+	~AgentService();
 
 	void Run();
 
@@ -13,6 +15,8 @@ private:
 
 private:
 	std::thread fInventoryThread;
+
+	Agent* fAgent;
 
 	bool fRunning;
 };
