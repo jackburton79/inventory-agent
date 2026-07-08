@@ -16,6 +16,8 @@ public:
 	void RunOneShot();
 	void ScheduleInventory();
 
+	bool InventoryRequested() const;
+	bool InventoryRunning() const;
 private:
 
 	void _InventoryLoop();
@@ -29,5 +31,6 @@ private:
 	Agent* fAgent;
 
 	std::atomic_bool fInventoryRequested;
+	std::atomic_bool fInventoryRunning;
 	std::atomic_bool fRunning;
 };

@@ -45,6 +45,7 @@ AgentService::AgentService()
 	fServer(nullptr),
 	fAgent(nullptr),
 	fInventoryRequested(false),
+	fInventoryRunning(false),
 	fRunning(false)
 {
 	fAgent = new Agent();
@@ -76,8 +77,12 @@ AgentService::Run()
 	fInventoryThread =
 		std::thread(&AgentService::_InventoryLoop, this);
 
-	// TODO: add configuration
+	// At start, run inventory
+	ScheduleInventory();
+	// TODO: make it configurable
+
 #if 1
+	// TODO: add configuration
 	// Start the web server
 	fServer->Start(62354, "");
 
@@ -111,12 +116,26 @@ void
 AgentService::ScheduleInventory()
 {
 	Logger::Log(LOG_INFO, "AgentService: Inventory scheduled");
-	{
-		std::lock_guard lock(fMutex);
-		fInventoryRequested = true;
-	}
+	std::lock_guard lock(fMutex);
 
-	fCondition.notify_one();
+	if (!fInventoryRequested) {
+		fInventoryRequested = true;
+		fCondition.notify_one();
+	}
+}
+
+
+bool
+AgentService::InventoryRequested() const
+{
+	return fInventoryRequested;
+}
+
+
+bool
+AgentService::InventoryRunning() const
+{
+	return fInventoryRunning;
 }
 
 
@@ -140,10 +159,12 @@ AgentService::_InventoryLoop()
 		lock.unlock();
 
 		try {
+			fInventoryRunning = true;
 			fAgent->RunInventory(true);
 			fAgent->SendToServer(Configuration::Get()->ServerURL());
 		} catch (std::exception& ex) {
 			Logger::Log(LOG_ERR, ex.what());
 		}
+		fInventoryRunning = false;
 	}
 }
