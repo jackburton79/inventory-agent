@@ -99,8 +99,7 @@ Socket::Connect(const struct hostent* hostEnt, const int port)
 	serverAddr.sin_family = hostEnt->h_addrtype;
 	serverAddr.sin_port = (unsigned short)htons(port);
 
-	return Connect((const struct sockaddr*)&serverAddr,
-			sizeof(serverAddr));
+	return Connect((const struct sockaddr*)&serverAddr, sizeof(serverAddr));
 }
 
 
