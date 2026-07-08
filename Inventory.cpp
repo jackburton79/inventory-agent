@@ -59,7 +59,7 @@ Inventory::Initialize()
 		Configuration::Get()->SetDeviceID(deviceID.c_str());
 	}
 
-	Logger::LogFormat(LOG_INFO, "Inventory::Initialize(): Device ID: %s...", deviceID.c_str());
+	Logger::LogFormat(LOG_DEBUG, "Inventory::Initialize(): Device ID: %s...", deviceID.c_str());
 
 	tinyxml2::XMLDeclaration* declaration = fDocument->NewDeclaration();
 	tinyxml2::XMLElement* request = fDocument->NewElement("REQUEST");
@@ -78,7 +78,7 @@ Inventory::Initialize()
 	deviceIdElement->LinkEndChild(fDocument->NewText(deviceID.c_str()));
 	request->LinkEndChild(deviceIdElement);
 
-	Logger::LogFormat(LOG_INFO, "Inventory::Initialize(): Device ID: %s... OK!", deviceID.c_str());
+	Logger::LogFormat(LOG_DEBUG, "Inventory::Initialize(): Device ID: %s... OK!", deviceID.c_str());
 	return true;
 }
 
@@ -142,7 +142,7 @@ Inventory::GenerateDeviceID() const
 bool
 Inventory::Build(bool noSoftware)
 {
-	Logger::Log(LOG_INFO, "Building inventory...");
+	Logger::Log(LOG_DEBUG, "Building inventory...");
 	std::string inventoryFormat = Configuration::Get()->KeyValue("format");
 	if (inventoryFormat.empty()) {
 		Logger::Log(LOG_WARNING, "No inventory format specified. Using lowest common denominator.");
@@ -175,7 +175,7 @@ Inventory::Build(bool noSoftware)
 		// Something failed.
 	}
 
-	Logger::Log(LOG_INFO, "Building inventory... Done!");
+	Logger::Log(LOG_DEBUG, "Building inventory... Done!");
 	return true;
 }
 
@@ -186,13 +186,13 @@ Inventory::Save(const char* fileName)
 	if (fileName == NULL)
 		return false;
 
-	Logger::LogFormat(LOG_INFO, "Saving %s inventory as %s", Configuration::Get()->DeviceID().c_str(), fileName);
+	Logger::LogFormat(LOG_DEBUG, "Saving %s inventory as %s", Configuration::Get()->DeviceID().c_str(), fileName);
 
 	bool result = fDocument->SaveFile(fileName) == tinyxml2::XML_SUCCESS;
 	if (result)
-		Logger::Log(LOG_INFO, "Inventory saved correctly!");
+		Logger::Log(LOG_DEBUG, "Inventory saved correctly!");
 	else
-		Logger::Log(LOG_INFO, "Failed to save inventory!");
+		Logger::Log(LOG_ERR, "Failed to save inventory!");
 	return result;
 }
 
@@ -208,7 +208,7 @@ Inventory::Send(const char* serverUrl)
 	URL inventoryUrl(serverUrl);
 
 	// Prepare prolog
-	Logger::LogFormat(LOG_INFO, "Inventory::Send(): server URL: %s", serverUrl);
+	Logger::LogFormat(LOG_DEBUG, "Inventory::Send(): server URL: %s", serverUrl);
 	tinyxml2::XMLDocument prolog;
 	_WriteProlog(prolog);
 	char* prologData = NULL;
@@ -219,14 +219,14 @@ Inventory::Send(const char* serverUrl)
 	}
 
 	if (compress) {
-		Logger::Log(LOG_INFO, "Compressing prolog...");
+		Logger::Log(LOG_DEBUG, "Compressing prolog...");
 		size_t destLength;
 		char* destData = NULL;
 		if (!ZLibCompressor::Compress(prologData, prologLength, destData, destLength)) {
 			Logger::Log(LOG_ERR, "Error while compressing XML prolog!");
 			return false;
 		}
-		Logger::Log(LOG_INFO, "Prolog compressed correctly!");
+		Logger::Log(LOG_DEBUG, "Prolog compressed correctly!");
 		delete[] prologData;
 		prologData = destData;
 		prologLength = destLength;
@@ -259,20 +259,20 @@ Inventory::Send(const char* serverUrl)
 			: Agent::LegacyAgentString();
 		requestHeader.SetUserAgent(userAgentString);
 
-		Logger::Log(LOG_INFO, "Inventory::Send(): Prolog prepared!");
+		Logger::Log(LOG_DEBUG, "Inventory::Send(): Prolog prepared!");
 		Logger::LogFormat(LOG_DEBUG, "%s", requestHeader.ToString().c_str());
 		if (httpObject.Request(requestHeader, prologData, prologLength) != 0) {
 			delete[] prologData;
-			Logger::LogFormat(LOG_INFO, "Inventory::Send(): Failed to send prolog: %s",
+			Logger::LogFormat(LOG_ERR, "Inventory::Send(): Failed to send prolog: %s",
 						httpObject.ErrorString().c_str());
 			return false;
 		}
 
-		Logger::Log(LOG_INFO, "Inventory::Send(): Try to send prolog...");
+		Logger::Log(LOG_DEBUG, "Inventory::Send(): Try to send prolog...");
 		const HTTPResponseHeader& responseHeader = httpObject.LastResponse();
 		if (responseHeader.StatusCode() == HTTP_BAD_REQUEST) {
 			if (c == 0) {
-				Logger::LogFormat(LOG_INFO, "Server didn't accept prolog. Try again with standard agent string.");
+				Logger::LogFormat(LOG_ERR, "Server didn't accept prolog. Try again with standard agent string.");
 				continue;
 			}
 		}
@@ -281,7 +281,7 @@ Inventory::Send(const char* serverUrl)
 
 		bool isOk = responseHeader.StatusCode() == HTTP_OK;
 		if (isOk)
-			Logger::LogFormat(LOG_INFO, "Prolog sent!");
+			Logger::LogFormat(LOG_DEBUG, "Prolog sent!");
 		else
 			Logger::LogFormat(LOG_ERR, "Sending prolog failed: %s", responseHeader.StatusString().c_str());
 
@@ -293,7 +293,7 @@ Inventory::Send(const char* serverUrl)
 		std::string contentType = responseHeader.ContentType();
 		size_t contentLength = responseHeader.ContentLength();
 
-		Logger::LogFormat(LOG_INFO, "Got reply with content type: '%s', content length: %lu",
+		Logger::LogFormat(LOG_DEBUG, "Got reply with content type: '%s', content length: %lu",
 			contentType.c_str(), static_cast<unsigned long>(contentLength));
 
 		// responseHeader keeps the ownership
@@ -305,7 +305,7 @@ Inventory::Send(const char* serverUrl)
 			contentType = "application/xml";
 
 		if (contentType == "application/x-compressed") {
-			Logger::Log(LOG_INFO, "Inventory::Send(): Decompressing reply... ");
+			Logger::Log(LOG_DEBUG, "Inventory::Send(): Decompressing reply... ");
 			char* decompressedData = NULL;
 			size_t decompressedLength = 0;
 			bool uncompress = ZLibCompressor::Uncompress(resultData, contentLength, decompressedData, decompressedLength);
@@ -332,7 +332,7 @@ Inventory::Send(const char* serverUrl)
 		std::cout << XML::ToString(document) << std::endl;
 #endif
 		std::string serverResponse = XML::GetElementText(document, "RESPONSE");
-		Logger::LogFormat(LOG_INFO, "Inventory::Send(): server replied %s", serverResponse.c_str());
+		Logger::LogFormat(LOG_DEBUG, "Inventory::Send(): server replied %s", serverResponse.c_str());
 		if (serverResponse == "SEND")
 			break;
 		Logger::LogFormat(LOG_ERR, "Server not ready to accept inventory: %s", serverResponse.c_str());
@@ -341,14 +341,14 @@ Inventory::Send(const char* serverUrl)
 
 	char* inventoryData = NULL;
 	size_t inventoryLength;
-	Logger::Log(LOG_INFO, "Inventory::Send(): Serializing XML inventory data... ");
+	Logger::Log(LOG_DEBUG, "Inventory::Send(): Serializing XML inventory data... ");
 	if (!XML::Serialize(*fDocument, inventoryData, inventoryLength)) {
 		Logger::Log(LOG_ERR, "Error while serializing XML data!");
 		return false;
 	}
 
 	if (compress) {
-		Logger::Log(LOG_INFO, "Inventory::Send(): Compressing inventory data... ");
+		Logger::Log(LOG_DEBUG, "Inventory::Send(): Compressing inventory data... ");
 		size_t compressedLength;
 		char* compressedData = NULL;
 		if (!ZLibCompressor::Compress(inventoryData, inventoryLength, compressedData, compressedLength)) {
@@ -377,7 +377,7 @@ Inventory::Send(const char* serverUrl)
 						inventoryUrl.Username(), inventoryUrl.Password());
 	}
 
-	Logger::LogFormat(LOG_INFO, "Inventory::Send(): Sending inventory data...");
+	Logger::LogFormat(LOG_DEBUG, "Inventory::Send(): Sending inventory data...");
 
 	if (httpObject.Request(requestHeader, inventoryData, inventoryLength) != 0) {
 		delete[] inventoryData;
@@ -390,7 +390,7 @@ Inventory::Send(const char* serverUrl)
 
 	bool statusOk = _HandleResponse(httpObject);
 	if (statusOk)
-		Logger::Log(LOG_INFO, "Inventory::Send(): Inventory was accepted!");
+		Logger::Log(LOG_DEBUG, "Inventory::Send(): Inventory was accepted!");
 	else
 		Logger::Log(LOG_ERR, "Inventory::Send(): Inventory was rejected by server!");
 
@@ -1206,15 +1206,15 @@ Inventory::_HandleResponse(HTTP& httpObject)
 	if (responseHeader2.ContentType() == "application/xml") {
 		size_t contentLength = responseHeader2.ContentLength();
 		const char* resultData = responseHeader2.Data();
-		Logger::Log(LOG_INFO, "Inventory::Send(): Deserialize XML... ");
+		Logger::Log(LOG_DEBUG, "Inventory::Send(): Deserialize XML... ");
 		tinyxml2::XMLDocument reply;
 		bool deserialized = XML::Deserialize(resultData, contentLength, reply);
 		if (!deserialized) {
 			Logger::Log(LOG_ERR, "failed to deserialize XML");
 			return false;
 		}
-		Logger::Log(LOG_INFO, "Server replied:");
-		Logger::Log(LOG_INFO, XML::ToString(reply).c_str());
+		Logger::Log(LOG_DEBUG, "Server replied:");
+		Logger::Log(LOG_DEBUG, XML::ToString(reply).c_str());
 	}
 	return statusOk;
 }
