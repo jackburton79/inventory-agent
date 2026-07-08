@@ -25,6 +25,8 @@ public:
 	void Run();
 	void RunOneShot();
 
+	void Stop();
+
 	AgentStatus Status() const;
 
 	bool InventoryRequested() const;

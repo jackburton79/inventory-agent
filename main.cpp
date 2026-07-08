@@ -14,12 +14,15 @@
 #include <cstring>
 #include <getopt.h>
 #include <iostream>
-#include <unistd.h>
+#include <signal.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include <string>
 
 extern const char* __progname;
+
+static AgentService* sAgentService = nullptr;
 
 static
 struct option sLongOptions[] = {
@@ -198,18 +201,32 @@ HandleArgs(int argc, char **argv)
 }
 
 
+static void
+SignalHandler(int signal)
+{
+	Logger::LogFormat(LOG_INFO, "Received signal %d", signal);
+
+	if (sAgentService != nullptr)
+		sAgentService->Stop();
+}
+
+
 int
 main(int argc, char **argv)
 {
 	HandleArgs(argc, argv);
 
 	try {
-		AgentService service;
+		sAgentService = new AgentService();
+
+		::signal(SIGINT, SignalHandler);
+		::signal(SIGTERM, SignalHandler);
+
 		Configuration* config = Configuration::Get();
 		if (config->KeyValue("DAEMONIZE") == CONF_VALUE_TRUE)
-			service.Run();
+			sAgentService->Run();
 		else
-			service.RunOneShot();
+			sAgentService->RunOneShot();
 #if DEBUG
 		config->Print();
 		std::cout << "Agent String: " << Agent::AgentString() << std::endl;

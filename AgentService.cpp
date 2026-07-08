@@ -3,8 +3,9 @@
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
-#include <unistd.h>
 #include <sys/stat.h>
+#include <unistd.h>
+
 
 #include "Agent.h"
 #include "Configuration.h"
@@ -91,6 +92,7 @@ AgentService::Run()
 	while (fRunning)
 		sleep(60);
 
+	fServer->Stop();
 #endif
 }
 
@@ -111,6 +113,18 @@ AgentService::RunOneShot()
 	} else {
 		fAgent->SendToServer(config->ServerURL());
 	}
+}
+
+
+void
+AgentService::Stop()
+{
+	{
+		std::lock_guard lock(fMutex);
+		fRunning = false;
+	}
+
+	fCondition.notify_all();
 }
 
 
