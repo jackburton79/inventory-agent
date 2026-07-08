@@ -51,6 +51,8 @@ Agent::~Agent()
 void
 Agent::RunInventory(bool noSoftware)
 {
+	Logger::Log(LOG_INFO, "Agent::RunInventory()");
+
 	// TODO: Move these away from here
 	DMIDataBackend().Run();
 	DMIDecodeBackend().Run();

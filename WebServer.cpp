@@ -47,7 +47,7 @@ WebServer::Start(int port, const std::string& certificateFile)
 		return false;
 	}
 
-	Logger::LogFormat(LOG_INFO, "WebServer: listening on port %s", portStr);
+	Logger::LogFormat(LOG_INFO, "WebServer: listening on port %s", portStr.c_str());
 
 	mg_set_request_handler(fContext, "/", RootHandler, this);
 	mg_set_request_handler(fContext, "/now", NowHandler, this);

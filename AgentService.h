@@ -25,10 +25,9 @@ private:
 	std::condition_variable fCondition;
 	std::mutex fMutex;
 
-	bool fInventoryRequested;
-
 	WebServer* fServer;
 	Agent* fAgent;
 
+	std::atomic_bool fInventoryRequested;
 	std::atomic_bool fRunning;
 };

@@ -44,6 +44,7 @@ AgentService::AgentService()
 	:
 	fServer(nullptr),
 	fAgent(nullptr),
+	fInventoryRequested(false),
 	fRunning(false)
 {
 	fAgent = new Agent();
