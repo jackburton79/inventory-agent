@@ -225,9 +225,24 @@ WebServer::NowHandler(mg_connection* conn, void* cbdata)
 
 	Logger::LogFormat(LOG_INFO, "Remote inventory requested from %s", requestInfo->remote_addr);
 
-	// TODO: Return access denied
-	//if (!IsTrusted(requestInfo->remote_addr))
-	//	return 1;
+	// TODO: Return access denied page
+	if (!IsTrusted(requestInfo->remote_addr)) {
+		const char* html =
+			"<html>"
+			"<head><title>Inventory Agent</title></head>"
+			"<body>"
+			"<p>Access denied</p>"
+			"</body>"
+			"</html>";
+
+		mg_printf(conn,
+			"HTTP/1.1 400 OK\r\n"
+			"Content-Type: text/html\r\n"
+			"Content-Length: %zu\r\n"
+			"\r\n%s",
+			::strlen(html), html);
+		return 400;
+	}
 
 	// schedule an immediate inventory
 	WebServer* thisPointer = reinterpret_cast<WebServer*>(cbdata);
@@ -237,7 +252,7 @@ WebServer::NowHandler(mg_connection* conn, void* cbdata)
 
 	const char* html =
 		"<html>"
-		"<head><title>GLPI-Agent</title></head>"
+		"<head><title>Inventory Agent</title></head>"
 		"<body>"
 		"<p>OK</p>"
 		"</body>"
