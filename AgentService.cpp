@@ -138,6 +138,26 @@ AgentService::Status() const
 }
 
 
+std::string
+AgentService::StatusString() const
+{
+	std::string statusString;
+	switch (Status()) {
+		case AgentStatus::Waiting:
+			statusString = "waiting";
+			break;
+		case AgentStatus::InventoryRunning:
+			statusString = "running";
+			break;
+		default:
+			statusString = "waiting";
+			break;
+	}
+
+	return statusString;
+}
+
+
 AgentStatus
 AgentService::ScheduleInventory()
 {

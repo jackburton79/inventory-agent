@@ -75,25 +75,30 @@ WebServer::RootHandler(mg_connection* conn, void* cbdata)
 {
 	Logger::Log(LOG_INFO, "RootHandler called");
 
-	const char* html =
-		"<html>"
-		"<head><title>Inventory Agent</title></head>"
+	WebServer* thisPointer = reinterpret_cast<WebServer*>(cbdata);
+	std::string statusString = thisPointer->fAgentService.StatusString();
+
+	std::string html =
+		std::string("<html>"
+		"<head>"
+		"<meta content=\"text/html; charset=UTF-8\" http-equiv=\"content-type\" />"
+		"<title>Inventory Agent</title>"
+		"</head>"
 		"<body>"
-		"<h1>Inventory Agent</h1>"
-		"<ul>"
-		"<li>\"/status\"Status</a></li>"
-		"<li>\"/inventory\"Inventory</a></li>"
-		"<li>/now\"Run inventory now</a></li>"
-		"</ul>"
+		"<div id='background'>"
+		"<p id='version' class='block'>This is ") + Agent::AgentString() + std::string("</p>"
+		"<div id='status'>"
+		"<p>The current status is ") + statusString + std::string("</p>"
+		"</div>"
 		"</body>"
-		"</html>";
+		"</html>");
 
 	mg_printf(conn,
 		"HTTP/1.1 200 OK\r\n"
 		"Content-Type: text/html\r\n"
 		"Content-Length: %zu\r\n"
 		"\r\n%s",
-		::strlen(html), html);
+		html.length(), html.c_str());
 
 	return 200;
 }
@@ -106,20 +111,7 @@ WebServer::StatusHandler(mg_connection* conn, void* cbdata)
 	Logger::LogFormat(LOG_INFO, "Status requested by %s", requestInfo->remote_addr);
 
 	WebServer* thisPointer = reinterpret_cast<WebServer*>(cbdata);
-	AgentStatus status = thisPointer->fAgentService.Status();
-
-	std::string statusString;
-	switch (status) {
-		case AgentStatus::Waiting:
-			statusString = "waiting";
-			break;
-		case AgentStatus::InventoryRunning:
-			statusString = "running";
-			break;
-		default:
-			statusString = "waiting";
-			break;
-	}
+	std::string statusString = thisPointer->fAgentService.StatusString();
 
 	mg_printf(conn,
 		"HTTP/1.1 200 OK\r\n"

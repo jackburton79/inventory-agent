@@ -28,6 +28,7 @@ public:
 	void Stop();
 
 	AgentStatus Status() const;
+	std::string StatusString() const;
 
 	bool InventoryRequested() const;
 	bool InventoryRunning() const;
