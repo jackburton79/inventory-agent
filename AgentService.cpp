@@ -90,7 +90,7 @@ AgentService::Run()
 	fServer->Start(62354, "");
 
 	while (fRunning)
-		sleep(60);
+		sleep(1);
 
 	fServer->Stop();
 #endif

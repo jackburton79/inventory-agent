@@ -207,8 +207,6 @@ HandleArgs(int argc, char **argv)
 static void
 SignalHandler(int signal)
 {
-	Logger::LogFormat(LOG_INFO, "Received signal %d", signal);
-
 	if (sAgentService != nullptr)
 		sAgentService->Stop();
 }
@@ -230,6 +228,8 @@ main(int argc, char **argv)
 			sAgentService->Run();
 		else
 			sAgentService->RunOneShot();
+
+		delete sAgentService;
 #if DEBUG
 		config->Print();
 		std::cout << "Agent String: " << Agent::AgentString() << std::endl;
