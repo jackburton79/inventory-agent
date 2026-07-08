@@ -4,21 +4,72 @@ extern "C" {
 
 #include "WebServer.h"
 
+#include <arpa/inet.h>
 #include <cstring>
+#include <netdb.h>
 
 #include "Agent.h"
 #include "AgentService.h"
 #include "Configuration.h"
 #include "Logger.h"
+#include "http/URL.h"
 
 
 static bool
 IsTrusted(const std::string& address)
 {
 	std::string trustedIPs = Configuration::Get()->KeyValue("httpd-trust");
-	if (address.compare("127.0.0.1") == 0
-			|| trustedIPs.find(address) != std::string::npos)
+
+	if (address.compare("127.0.0.1") == 0 ||
+			trustedIPs.find(address) != std::string::npos)
 		return true;
+
+	// TODO: move to its own method
+	// The configured server is also trusted
+	URL serverURL = Configuration::Get()->KeyValue("server");
+	const char *hostname = serverURL.Host().c_str();
+	if (!serverURL.Host().empty()) {
+		struct addrinfo hints;
+		struct addrinfo* res = nullptr;
+		memset(&hints, 0, sizeof hints);
+		hints.ai_family = AF_UNSPEC;
+		hints.ai_socktype = SOCK_STREAM;
+		hints.ai_flags = AI_CANONNAME;
+
+		int status;
+		if ((status = getaddrinfo(hostname, NULL, &hints, &res)) != 0)
+			return false;
+
+		for (struct addrinfo* p = res; p != NULL; p = p->ai_next) {
+			void *addr;
+			const char *ipver;
+			if (p->ai_family == AF_INET) {
+				struct sockaddr_in *ipv4 = (struct sockaddr_in*)p->ai_addr;
+				addr = &(ipv4->sin_addr);
+				ipver = "IPv4";
+			} else if (p->ai_family == AF_INET6) {
+				struct sockaddr_in6 *ipv6 = (struct sockaddr_in6*)p->ai_addr;
+				addr = &(ipv6->sin6_addr);
+				ipver = "IPv6";
+			} else {
+				continue;
+			}
+
+			char ipString[INET6_ADDRSTRLEN];
+			if (inet_ntop(p->ai_family, addr, ipString, sizeof ipString) == nullptr)
+				continue;
+
+			Logger::LogFormat(LOG_INFO, "%s: %s\n", ipver, ipString);
+
+			if (address.compare(ipString) == 0) {
+				freeaddrinfo(res);
+				return true;
+			}
+		}
+
+		freeaddrinfo(res);
+	}
+
 	return false;
 }
 
