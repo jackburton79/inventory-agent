@@ -194,7 +194,7 @@ HandleArgs(int argc, char **argv)
 	if (verbose)
 		Logger::SetLevel(LOG_DEBUG);
 	else
-		Logger::SetLevel(LOG_ERR);
+		Logger::SetLevel(LOG_INFO);
 
 	bool stdout = config->KeyValue("stdout") == CONF_VALUE_TRUE;
 	if (!stdout && config->ServerURL().empty()
