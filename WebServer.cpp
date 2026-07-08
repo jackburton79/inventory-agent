@@ -104,21 +104,22 @@ WebServer::StatusHandler(mg_connection* conn, void* cbdata)
 {
 	Logger::Log(LOG_INFO, "StatusHandler called");
 
-	std::string json =
+	/*std::string json =
 		"{"
 		"\"status\":\"running\","
 		"\"version\":\"" +
 		Agent::Version() +
 		"\""
 		"}";
+*/
+	// TODO: use status
+	//AgentService status = fAgentService.Status();
 
 	mg_printf(conn,
 		"HTTP/1.1 200 OK\r\n"
-		"Content-Type: application/json\r\n"
-		"Content-Length: %zu\r\n"
-		"\r\n%s",
-		json.size(),
-		json.c_str());
+		"Content-Type: text/plain\r\n"
+		"\r\n"
+		"status: waiting");
 
 	return 200;
 }
@@ -131,9 +132,9 @@ WebServer::InventoryHandler(mg_connection* conn, void* cbdata)
 
 	// TODO: update the inventory, then send
 	mg_printf(conn, "HTTP/1.1 200 OK\r\n"
-		"Content-Type: application/json\r\n"
+		"Content-Type: text/plain\r\n"
 		"\r\n"
-		"{\"hostname\":\"test\"}");
+		"status: test");
 
 	return 200;
 }
@@ -147,6 +148,23 @@ WebServer::NowHandler(mg_connection* conn, void* cbdata)
 	// schedule an immediate inventory
 	WebServer* thisPointer = reinterpret_cast<WebServer*>(cbdata);
 	thisPointer->fAgentService.ScheduleInventory();
+
+	// TODO: check the result of ScheduleInventory and reply with it
+
+	const char* html =
+		"<html>"
+		"<head><title>GLPI-Agent</title></head>"
+		"<body>"
+		"<p>OK</p>"
+		"</body>"
+		"</html>";
+
+	mg_printf(conn,
+		"HTTP/1.1 200 OK\r\n"
+		"Content-Type: text/html\r\n"
+		"Content-Length: %zu\r\n"
+		"\r\n%s",
+		::strlen(html), html);
 
 	return 200;
 }
