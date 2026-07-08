@@ -2,7 +2,7 @@
  * Socket.cpp
  *
  *  Created on: 12/07/2017
- *  Copyright 2017 Stefano Ceccherini (stefano.ceccherini@gmail.com)
+ *  Copyright 2017-2023 Stefano Ceccherini
  */
 
 #include "Socket.h"
@@ -65,7 +65,7 @@ Socket::FD() const
 std::string
 Socket::HostName() const
 {
-    return fHostName;
+	return fHostName;
 }
 
 
