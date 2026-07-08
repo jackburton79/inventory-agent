@@ -6,7 +6,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-
 #include "Agent.h"
 #include "Configuration.h"
 #include "Logger.h"
@@ -222,7 +221,7 @@ AgentService::_InventoryLoop()
 		try {
 			fInventoryRunning = true;
 			fLastInventoryStart = std::chrono::steady_clock::now();
-			bool noSoftware = (config->KeyValue(CONF_NO_SOFTWARE) == CONF_VALUE_TRUE);
+			bool noSoftware = (Configuration::Get()->KeyValue(CONF_NO_SOFTWARE) == CONF_VALUE_TRUE);
 			fAgent->RunInventory(noSoftware);
 			// TODO: What if we don't have a server url ?
 			fAgent->SendToServer(Configuration::Get()->ServerURL());
