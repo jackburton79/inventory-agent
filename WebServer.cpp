@@ -138,7 +138,7 @@ WebServer::InfoHandler(mg_connection* conn, void* cbdata)
 		"{"
 		"\"version\": \"%s\","
 		"\"status\": \"%s\""
-		"}", statusString.c_str(), Agent::Version().c_str());
+		"}", Agent::Version().c_str(), statusString.c_str());
 
 	return 200;
 }
