@@ -4,8 +4,9 @@ Wants=network-online.target
 After=network.target
 
 [Service]
-Type=oneshot
-ExecStart=/usr/local/bin/ocsinventory-agent --conf /etc/inventory-agent.conf
+Type=forking
+Restart=on-failure
+ExecStart=/usr/local/bin/ocsinventory-agent --conf /etc/inventory-agent/inventory-agent.conf --daemon
 
 [Install]
 WantedBy=multi-user.target
