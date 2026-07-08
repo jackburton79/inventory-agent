@@ -35,7 +35,8 @@ struct option sLongOptions[] = {
 		{ "nosoftware", no_argument, 0, 0 }, // deprecated
 		{ "no-software", no_argument, 0, 0 },
 		{ "no-assettag", no_argument, 0, 0 },
-		{ "daemonize", no_argument, 0, 'd' },
+		{ "daemonize", no_argument, 0, 'd' }, // deprecated
+		{ "daemon", no_argument, 0, 'd' },
 		{ "wait", required_argument, 0, 'w' },
 		{ "help", no_argument, 0, 'h' },
 		{ "logger", required_argument, 0, 0 },
@@ -71,7 +72,7 @@ PrintHelpAndExit()
 	std::cout << std::endl;
 	std::cout << "      --agent-string <string>        Specify custom HTTP agent string" << std::endl;
 	std::cout << std::endl;
-	std::cout << "  -d, --daemonize                    Detach from running terminal" << std::endl;
+	std::cout << "  -d, --daemon                       Runs continuously in background" << std::endl;
 	std::cout << "  -w, --wait <s>                     Wait for the specified amount of seconds before building the inventory" << std::endl;
 	std::cout << std::endl;
 	std::cout << "      --logger <backend>             Specify error log backend (STDERR / SYSLOG)." << std::endl;
