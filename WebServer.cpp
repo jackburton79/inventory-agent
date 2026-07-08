@@ -52,7 +52,7 @@ WebServer::Start(int port, const std::string& certificateFile)
 	mg_set_request_handler(fContext, "/", RootHandler, this);
 	mg_set_request_handler(fContext, "/now", NowHandler, this);
 	mg_set_request_handler(fContext, "/status", StatusHandler, this);
-	mg_set_request_handler(fContext, "/inventory", InventoryHandler, this);
+	//mg_set_request_handler(fContext, "/inventory", InventoryHandler, this);
 
 	return true;
 }
