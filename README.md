@@ -61,7 +61,7 @@ Usage
 
         --agent-string <string>        Specify custom HTTP agent string
 
-    -d, --daemonize                    Detach from running terminal
+    -d, --daemon                       Runs in background as a service instead of exiting immediately
     -w, --wait <s>                     Wait for the specified amount of seconds before building the inventory
 
     --logger <backend>                 Specify error log backend (STDERR / SYSLOG).
