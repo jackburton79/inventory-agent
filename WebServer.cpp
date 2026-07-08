@@ -102,24 +102,30 @@ WebServer::RootHandler(mg_connection* conn, void* cbdata)
 int
 WebServer::StatusHandler(mg_connection* conn, void* cbdata)
 {
-	Logger::Log(LOG_INFO, "StatusHandler called");
+	const mg_request_info* requestInfo = mg_get_request_info(conn);
+	Logger::LogFormat(LOG_INFO, "Status requested by %s", requestInfo->remote_addr);
 
-	/*std::string json =
-		"{"
-		"\"status\":\"running\","
-		"\"version\":\"" +
-		Agent::Version() +
-		"\""
-		"}";
-*/
-	// TODO: use status
-	//AgentService status = fAgentService.Status();
+	WebServer* thisPointer = reinterpret_cast<WebServer*>(cbdata);
+	AgentStatus status = thisPointer->fAgentService.Status();
+
+	std::string statusString;
+	switch (status) {
+		case AgentStatus::Waiting:
+			statusString = "waiting";
+			break;
+		case AgentStatus::InventoryRunning:
+			statusString = "running";
+			break;
+		default:
+			statusString = "waiting";
+			break;
+	}
 
 	mg_printf(conn,
 		"HTTP/1.1 200 OK\r\n"
 		"Content-Type: text/plain\r\n"
 		"\r\n"
-		"status: waiting");
+		"status: %s", statusString.c_str());
 
 	return 200;
 }
@@ -143,7 +149,9 @@ WebServer::InventoryHandler(mg_connection* conn, void* cbdata)
 int
 WebServer::NowHandler(mg_connection* conn, void* cbdata)
 {
-	Logger::Log(LOG_INFO, "NowHandler called");
+	const mg_request_info* requestInfo = mg_get_request_info(conn);
+
+	Logger::LogFormat(LOG_INFO, "Remote inventory requested from %s", requestInfo->remote_addr);
 
 	// schedule an immediate inventory
 	WebServer* thisPointer = reinterpret_cast<WebServer*>(cbdata);
