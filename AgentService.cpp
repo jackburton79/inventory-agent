@@ -57,9 +57,6 @@ AgentService::AgentService()
 
 AgentService::~AgentService()
 {
-	if (fInventoryThread.joinable())
-		fInventoryThread.join();
-
 	if (fServer != nullptr) {
 		fServer->Stop();
 		delete fServer;
@@ -92,7 +89,13 @@ AgentService::Run()
 	while (fRunning)
 		sleep(1);
 
+	if (fInventoryThread.joinable())
+		fInventoryThread.join();
+
 	fServer->Stop();
+
+	delete fServer;
+	fServer = nullptr;
 #endif
 }
 
@@ -219,7 +222,8 @@ AgentService::_InventoryLoop()
 		try {
 			fInventoryRunning = true;
 			fLastInventoryStart = std::chrono::steady_clock::now();
-			fAgent->RunInventory(true);
+			bool noSoftware = (config->KeyValue(CONF_NO_SOFTWARE) == CONF_VALUE_TRUE);
+			fAgent->RunInventory(noSoftware);
 			// TODO: What if we don't have a server url ?
 			fAgent->SendToServer(Configuration::Get()->ServerURL());
 			fLastInventoryEnd = std::chrono::steady_clock::now();
