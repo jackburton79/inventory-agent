@@ -207,7 +207,7 @@ main(int argc, char **argv)
 		AgentService service;
 		Configuration* config = Configuration::Get();
 		if (config->KeyValue("DAEMONIZE") == CONF_VALUE_TRUE)
-			service.Start();
+			service.Run();
 		else
 			service.RunOneShot();
 #if DEBUG

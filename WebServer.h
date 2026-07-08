@@ -6,9 +6,10 @@
 struct mg_context;
 struct mg_connection;
 
+class AgentService;
 class WebServer {
 public:
-	WebServer();
+	WebServer(AgentService& agentService);
 	~WebServer();
 
 	bool Start(int port, const std::string& certificateFile);
@@ -19,9 +20,11 @@ private:
 	static int RootHandler(mg_connection* conn, void* cbdata);
 	static int StatusHandler(mg_connection* conn, void* cbdata);
 	static int InventoryHandler(mg_connection* conn, void* cbdata);
+	static int NowHandler(mg_connection* conn, void* cbdata);
 
 private:
 	mg_context* fContext;
+	AgentService& fAgentService;
 };
 
 #endif

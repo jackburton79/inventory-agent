@@ -7,11 +7,13 @@ extern "C" {
 #include <cstring>
 
 #include "Agent.h"
+#include "AgentService.h"
 #include "Logger.h"
 
-WebServer::WebServer()
+WebServer::WebServer(AgentService& agentService)
 	:
-	fContext(nullptr)
+	fContext(nullptr),
+	fAgentService(agentService)
 {
 }
 
@@ -48,6 +50,7 @@ WebServer::Start(int port, const std::string& certificateFile)
 	Logger::LogFormat(LOG_INFO, "WebServer: listening on port %s", portStr);
 
 	mg_set_request_handler(fContext, "/", RootHandler, this);
+	mg_set_request_handler(fContext, "/now", NowHandler, this);
 	mg_set_request_handler(fContext, "/status", StatusHandler, this);
 	mg_set_request_handler(fContext, "/inventory", InventoryHandler, this);
 
@@ -131,6 +134,19 @@ WebServer::InventoryHandler(mg_connection* conn, void* cbdata)
 		"Content-Type: application/json\r\n"
 		"\r\n"
 		"{\"hostname\":\"test\"}");
+
+	return 200;
+}
+
+
+int
+WebServer::NowHandler(mg_connection* conn, void* cbdata)
+{
+	Logger::Log(LOG_INFO, "NowHandler called");
+
+	// schedule an immediate inventory
+	WebServer* thisPointer = reinterpret_cast<WebServer*>(cbdata);
+	thisPointer->fAgentService.ScheduleInventory();
 
 	return 200;
 }

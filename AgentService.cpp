@@ -64,11 +64,11 @@ AgentService::~AgentService()
 
 
 void
-AgentService::Start()
+AgentService::Run()
 {
 	Daemonize();
 
-	fServer = new WebServer();
+	fServer = new WebServer(*this);
 
 	fRunning = true;
 
@@ -109,6 +109,7 @@ AgentService::RunOneShot()
 void
 AgentService::ScheduleInventory()
 {
+	Logger::Log(LOG_INFO, "AgentService: Inventory scheduled");
 	{
 		std::lock_guard lock(fMutex);
 		fInventoryRequested = true;

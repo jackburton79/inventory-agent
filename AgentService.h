@@ -12,7 +12,7 @@ public:
 	AgentService();
 	~AgentService();
 
-	void Start();
+	void Run();
 	void RunOneShot();
 	void ScheduleInventory();
 
