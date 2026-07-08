@@ -90,6 +90,7 @@ WebServer::RootHandler(mg_connection* conn, void* cbdata)
 		"<div id='status'>"
 		"<p>The current status is ") + statusString + std::string("</p>"
 		"</div>"
+		"</div>"
 		"</body>"
 		"</html>");
 
