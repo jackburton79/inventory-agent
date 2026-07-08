@@ -8,6 +8,7 @@ extern "C" {
 
 #include "Agent.h"
 #include "AgentService.h"
+#include "Configuration.h"
 #include "Logger.h"
 
 WebServer::WebServer(AgentService& agentService)
@@ -73,10 +74,17 @@ WebServer::Stop()
 int
 WebServer::RootHandler(mg_connection* conn, void* cbdata)
 {
-	Logger::Log(LOG_INFO, "RootHandler called");
+	const mg_request_info* requestInfo = mg_get_request_info(conn);
+	Logger::LogFormat(LOG_INFO, "RootHandler called from %s", requestInfo->remote_addr);
 
 	WebServer* thisPointer = reinterpret_cast<WebServer*>(cbdata);
 	std::string statusString = thisPointer->fAgentService.StatusString();
+
+	bool enableCommands = false;
+	std::string trustedIPs = Configuration::Get()->KeyValue("httpd-trust");
+	if (::strcmp(requestInfo->remote_addr, "127.0.0.1") == 0
+			|| trustedIPs.find(requestInfo->remote_addr) != std::string::npos)
+		enableCommands = true;
 
 	std::string html =
 		std::string("<html>"
@@ -88,8 +96,16 @@ WebServer::RootHandler(mg_connection* conn, void* cbdata)
 		"<div id='background'>"
 		"<p id='version' class='block'>This is ") + Agent::AgentString() + std::string("</p>"
 		"<div id='status'>"
-		"<p>The current status is ") + statusString + std::string("</p>"
-		"</div>"
+		"<p>The current status is ") + statusString + std::string("</p>");
+
+	if (enableCommands) {
+		html += std::string(
+			"<div id = 'force' class='block'>"
+				"<p><a href='/now'>Force an inventory</a></p>"
+			"</div>");
+	}
+
+	html += std::string("</div>"
 		"</div>"
 		"</body>"
 		"</html>");
