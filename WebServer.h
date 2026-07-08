@@ -19,7 +19,7 @@ public:
 private:
 	static int RootHandler(mg_connection* conn, void* cbdata);
 	static int StatusHandler(mg_connection* conn, void* cbdata);
-	static int InventoryHandler(mg_connection* conn, void* cbdata);
+	static int InfoHandler(mg_connection* conn, void* cbdata);
 	static int NowHandler(mg_connection* conn, void* cbdata);
 
 private:

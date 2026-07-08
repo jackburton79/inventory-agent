@@ -52,7 +52,7 @@ WebServer::Start(int port, const std::string& certificateFile)
 	mg_set_request_handler(fContext, "/", RootHandler, this);
 	mg_set_request_handler(fContext, "/now", NowHandler, this);
 	mg_set_request_handler(fContext, "/status", StatusHandler, this);
-	//mg_set_request_handler(fContext, "/inventory", InventoryHandler, this);
+	mg_set_request_handler(fContext, "/info", InfoHandler, this);
 
 	return true;
 }
@@ -124,15 +124,21 @@ WebServer::StatusHandler(mg_connection* conn, void* cbdata)
 
 
 int
-WebServer::InventoryHandler(mg_connection* conn, void* cbdata)
+WebServer::InfoHandler(mg_connection* conn, void* cbdata)
 {
-	Logger::Log(LOG_INFO, "InventoryHandler called");
+	Logger::Log(LOG_INFO, "InfoHandler called");
+
+	WebServer* thisPointer = reinterpret_cast<WebServer*>(cbdata);
+	std::string statusString = thisPointer->fAgentService.StatusString();
 
 	// TODO: update the inventory, then send
 	mg_printf(conn, "HTTP/1.1 200 OK\r\n"
-		"Content-Type: text/plain\r\n"
+		"Content-Type: application/json\r\n"
 		"\r\n"
-		"status: test");
+		"{"
+		"\"version\": \"%s\","
+		"\"status\": \"%s\""
+		"}", statusString.c_str(), Agent::Version().c_str());
 
 	return 200;
 }

@@ -36,17 +36,19 @@ public:
 	AgentStatus ScheduleInventory();
 
 private:
-
 	void _InventoryLoop();
+
+	WebServer* fServer;
+	Agent* fAgent;
 
 	std::thread fInventoryThread;
 	std::condition_variable fCondition;
 	std::mutex fMutex;
 
-	WebServer* fServer;
-	Agent* fAgent;
-
 	std::chrono::steady_clock::time_point fLastInventoryRequest;
+	std::chrono::steady_clock::time_point fLastInventoryStart;
+	std::chrono::steady_clock::time_point fLastInventoryEnd;
+
 	std::atomic_bool fInventoryRequested;
 	std::atomic_bool fInventoryRunning;
 	std::atomic_bool fRunning;

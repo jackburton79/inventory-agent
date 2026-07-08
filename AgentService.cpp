@@ -218,10 +218,14 @@ AgentService::_InventoryLoop()
 
 		try {
 			fInventoryRunning = true;
+			fLastInventoryStart = std::chrono::steady_clock::now();
 			fAgent->RunInventory(true);
+			// TODO: What if we don't have a server url ?
 			fAgent->SendToServer(Configuration::Get()->ServerURL());
+			fLastInventoryEnd = std::chrono::steady_clock::now();
 		} catch (std::exception& ex) {
 			Logger::Log(LOG_ERR, ex.what());
+
 		}
 		fInventoryRunning = false;
 	}
