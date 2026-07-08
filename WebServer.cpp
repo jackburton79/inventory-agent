@@ -11,6 +11,18 @@ extern "C" {
 #include "Configuration.h"
 #include "Logger.h"
 
+
+static bool
+IsTrusted(const std::string& address)
+{
+	std::string trustedIPs = Configuration::Get()->KeyValue("httpd-trust");
+	if (address.compare("127.0.0.1") == 0
+			|| trustedIPs.find(address) != std::string::npos)
+		return true;
+	return false;
+}
+
+
 WebServer::WebServer(AgentService& agentService)
 	:
 	fContext(nullptr),
@@ -80,12 +92,6 @@ WebServer::RootHandler(mg_connection* conn, void* cbdata)
 	WebServer* thisPointer = reinterpret_cast<WebServer*>(cbdata);
 	std::string statusString = thisPointer->fAgentService.StatusString();
 
-	bool enableCommands = false;
-	std::string trustedIPs = Configuration::Get()->KeyValue("httpd-trust");
-	if (::strcmp(requestInfo->remote_addr, "127.0.0.1") == 0
-			|| trustedIPs.find(requestInfo->remote_addr) != std::string::npos)
-		enableCommands = true;
-
 	std::string html =
 		std::string("<html>"
 		"<head>"
@@ -98,7 +104,7 @@ WebServer::RootHandler(mg_connection* conn, void* cbdata)
 		"<div id='status'>"
 		"<p>The current status is ") + statusString + std::string("</p>");
 
-	if (enableCommands) {
+	if (IsTrusted(requestInfo->remote_addr)) {
 		html += std::string(
 			"<div id = 'force' class='block'>"
 				"<p><a href='/now'>Force an inventory</a></p>"
@@ -167,6 +173,10 @@ WebServer::NowHandler(mg_connection* conn, void* cbdata)
 	const mg_request_info* requestInfo = mg_get_request_info(conn);
 
 	Logger::LogFormat(LOG_INFO, "Remote inventory requested from %s", requestInfo->remote_addr);
+
+	// TODO: Return access denied
+	//if (!IsTrusted(requestInfo->remote_addr))
+	//	return 1;
 
 	// schedule an immediate inventory
 	WebServer* thisPointer = reinterpret_cast<WebServer*>(cbdata);
