@@ -167,6 +167,8 @@ HandleArgs(int argc, char **argv)
 				std::string optName = sLongOptions[optIndex].name;
 				if (optName == "nosoftware" || optName == "no-software")
 					config->SetVolatileKeyValue(CONF_NO_SOFTWARE, "true");
+				else if (optName == "daemon" || optName == "daemonize")
+					config->SetVolatileKeyValue("DAEMONIZE", "true");
 				else if (optName == "no-assettag")
 					config->SetVolatileKeyValue(CONF_NO_ASSETTAG, "true");
 				else if (optName == "format") {
