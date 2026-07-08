@@ -48,6 +48,8 @@ AgentService::AgentService()
 	fInventoryRunning(false),
 	fRunning(false)
 {
+	fLastInventoryRequest = std::chrono::steady_clock::now() - std::chrono::minutes(1);
+
 	fAgent = new Agent();
 }
 
@@ -112,16 +114,38 @@ AgentService::RunOneShot()
 }
 
 
-void
+AgentStatus
+AgentService::Status() const
+{
+	if (fInventoryRunning)
+		return AgentStatus::InventoryRunning;
+
+	return AgentStatus::Waiting;
+}
+
+
+AgentStatus
 AgentService::ScheduleInventory()
 {
-	Logger::Log(LOG_INFO, "AgentService: Inventory scheduled");
 	std::lock_guard lock(fMutex);
 
-	if (!fInventoryRequested) {
+	auto now = std::chrono::steady_clock::now();
+	if (now - fLastInventoryRequest < std::chrono::minutes(1)) {
+		Logger::Log(LOG_INFO, "AgentService: inventory request ignored (rate limited)");
+		return AgentStatus::RateLimited;
+	}
+
+	fLastInventoryRequest = now;
+
+	if (!fInventoryRequested && !fInventoryRunning) {
 		fInventoryRequested = true;
+
+		Logger::Log(LOG_INFO, "AgentService: inventory scheduled");
+
 		fCondition.notify_one();
 	}
+
+	return AgentStatus::InventoryScheduled;
 }
 
 
