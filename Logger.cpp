@@ -82,7 +82,7 @@ Logger::_DoLog(int level, const char* string)
 {
 	switch (sLogType) {
 		case LOGGER_TYPE_SYSLOG:
-			::syslog(level|LOG_PID|LOG_CONS|LOG_USER, "%s", (const char* const)string);
+			::syslog(level|LOG_PID|LOG_CONS|LOG_USER, "%s", const_cast<const char* const>(string));
 			break;
 		case LOGGER_TYPE_STDERR:
 			std::cerr << string << std::endl;
@@ -92,7 +92,7 @@ Logger::_DoLog(int level, const char* string)
 			if (::isatty(STDIN_FILENO))
 				std::cerr << string << std::endl;
 			else
-				::syslog(level|LOG_PID|LOG_CONS|LOG_USER, "%s", (const char* const)string);
+				::syslog(level|LOG_PID|LOG_CONS|LOG_USER, "%s", const_cast<const char* const>(string));
 			break;
 	}
 }
