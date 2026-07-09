@@ -7,6 +7,7 @@ extern "C" {
 #include <arpa/inet.h>
 #include <cstring>
 #include <netdb.h>
+#include <sstream>
 
 #include "Agent.h"
 #include "AgentService.h"
@@ -173,12 +174,8 @@ WebServer::RootHandler(mg_connection* conn, void* cbdata)
 		"</body>"
 		"</html>");
 
-	mg_printf(conn,
-		"HTTP/1.1 200 OK\r\n"
-		"Content-Type: text/html\r\n"
-		"Content-Length: %zu\r\n"
-		"\r\n%s",
-		html.length(), html.c_str());
+	mg_send_http_ok(conn, "text/html", html.length());
+	mg_write(conn, html.c_str(), html.length());
 
 	return 200;
 }
@@ -191,13 +188,11 @@ WebServer::StatusHandler(mg_connection* conn, void* cbdata)
 	Logger::LogFormat(LOG_INFO, "Status requested by %s", requestInfo->remote_addr);
 
 	WebServer* thisPointer = reinterpret_cast<WebServer*>(cbdata);
-	std::string statusString = thisPointer->fAgentService.StatusString();
 
-	mg_printf(conn,
-		"HTTP/1.1 200 OK\r\n"
-		"Content-Type: text/plain\r\n"
-		"\r\n"
-		"status: %s", statusString.c_str());
+	std::string html = std::string("status: ") + thisPointer->fAgentService.StatusString();
+
+	mg_send_http_ok(conn, "text/plain", html.length());
+	mg_printf(conn, html.c_str(), html.length());
 
 	return 200;
 }
@@ -211,14 +206,12 @@ WebServer::InfoHandler(mg_connection* conn, void* cbdata)
 	WebServer* thisPointer = reinterpret_cast<WebServer*>(cbdata);
 	std::string statusString = thisPointer->fAgentService.StatusString();
 
-	// TODO: update the inventory, then send
-	mg_printf(conn, "HTTP/1.1 200 OK\r\n"
-		"Content-Type: application/json\r\n"
-		"\r\n"
-		"{"
-		"\"version\": \"%s\","
-		"\"status\": \"%s\""
-		"}", Agent::Version().c_str(), statusString.c_str());
+	std::ostringstream s;
+	s << "{" << "\"version\": \"" << Agent::Version() << "\",""\"status\": \"" << statusString << "\"""}";
+
+	mg_send_http_ok(conn, "application/json", s.str().length());
+
+	mg_write(conn, s.str().c_str(), s.str().length());
 
 	return 200;
 }
@@ -243,12 +236,9 @@ WebServer::NowHandler(mg_connection* conn, void* cbdata)
 			"</body>"
 			"</html>");
 
-		mg_printf(conn,
-			"HTTP/1.1 200 OK\r\n"
-			"Content-Type: text/html\r\n"
-			"Content-Length: %zu\r\n"
-			"\r\n%s",
-			html.length(), html.c_str());
+		mg_send_http_ok(conn, "text/html", html.length());
+		mg_write(conn, html.c_str(), html.length());
+
 		return 200;
 	}
 
@@ -265,12 +255,8 @@ WebServer::NowHandler(mg_connection* conn, void* cbdata)
 		"</body>"
 		"</html>");
 
-	mg_printf(conn,
-		"HTTP/1.1 200 OK\r\n"
-		"Content-Type: text/html\r\n"
-		"Content-Length: %zu\r\n"
-		"\r\n%s",
-		html.length(), html.c_str());
+	mg_send_http_ok(conn, "text/html", html.length());
+	mg_write(conn, html.c_str(), html.length());
 
 	return 200;
 }
