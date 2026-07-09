@@ -167,6 +167,14 @@ AgentService::StatusString() const
 }
 
 
+std::string
+AgentService::LastInventoryTime() const
+{
+	std::time_t t = std::chrono::system_clock::to_time_t(fLastInventoryEnd);
+	return std::ctime(&t);
+}
+
+
 AgentStatus
 AgentService::ScheduleInventory()
 {
@@ -227,12 +235,12 @@ AgentService::_InventoryLoop()
 
 		try {
 			fInventoryRunning = true;
-			fLastInventoryStart = std::chrono::steady_clock::now();
+			fLastInventoryStart = std::chrono::system_clock::now();
 			bool noSoftware = (Configuration::Get()->KeyValue(CONF_NO_SOFTWARE) == CONF_VALUE_TRUE);
 			fAgent->RunInventory(noSoftware);
 			// TODO: What if we don't have a server url ?
 			fAgent->SendToServer(Configuration::Get()->ServerURL());
-			fLastInventoryEnd = std::chrono::steady_clock::now();
+			fLastInventoryEnd = std::chrono::system_clock::now();
 		} catch (std::exception& ex) {
 			Logger::Log(LOG_ERR, ex.what());
 
@@ -254,7 +262,7 @@ AgentService::_SchedulingLoop()
 			ScheduleInventory();
 		}
 
-		std::this_thread::sleep_for(std::chrono::minutes(1));
+		std::this_thread::sleep_for(std::chrono::seconds(10));
 	}
 
 	Logger::Log(LOG_DEBUG, "AgentService: _SchedulingLoop exiting");

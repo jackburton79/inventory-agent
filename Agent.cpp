@@ -102,10 +102,15 @@ Agent::SaveToFile(const std::string filePathName)
 }
 
 
-void
+bool
 Agent::SendToServer(const std::string serverString)
 {
-	fInventory->Send(serverString.c_str());
+	try {
+		return fInventory->Send(serverString.c_str());
+	} catch (...) {
+		Logger::Log(LOG_ERR, "Agent: cannot send inventory!");
+	}
+	return false;
 }
 
 

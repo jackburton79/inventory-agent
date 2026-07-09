@@ -30,6 +30,8 @@ public:
 	AgentStatus Status() const;
 	std::string StatusString() const;
 
+	std::string LastInventoryTime() const;
+
 	bool InventoryRequested() const;
 	bool InventoryRunning() const;
 
@@ -49,8 +51,8 @@ private:
 	std::mutex fMutex;
 
 	std::chrono::steady_clock::time_point fLastInventoryRequest;
-	std::chrono::steady_clock::time_point fLastInventoryStart;
-	std::chrono::steady_clock::time_point fLastInventoryEnd;
+	std::chrono::system_clock::time_point fLastInventoryStart;
+	std::chrono::system_clock::time_point fLastInventoryEnd;
 	std::chrono::steady_clock::time_point fNextScheduledInventory;
 
 	std::atomic_bool fInventoryRequested;

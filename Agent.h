@@ -23,7 +23,7 @@ public:
 
 	void PrintToStream();
 	void SaveToFile(const std::string filePathName);
-	void SendToServer(const std::string serverString);
+	bool SendToServer(const std::string serverString);
 
 	static std::string Version();
 	static std::string LegacyAgentString();

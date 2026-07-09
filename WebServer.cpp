@@ -203,13 +203,16 @@ WebServer::InfoHandler(mg_connection* conn, void* cbdata)
 	Logger::Log(LOG_INFO, "InfoHandler called");
 
 	WebServer* thisPointer = reinterpret_cast<WebServer*>(cbdata);
-	std::string statusString = thisPointer->fAgentService.StatusString();
 
 	std::ostringstream s;
-	s << "{" << "\"version\": \"" << Agent::Version() << "\",""\"status\": \"" << statusString << "\"""}";
+	s << "{" << "\"version\": \"" << Agent::Version() << "\"";
+	s << ",";
+	s << "\"status\": \"" << thisPointer->fAgentService.StatusString() << "\"";
+	s << ",";
+	s << "\"last_inventory\": \"" << thisPointer->fAgentService.LastInventoryTime() << "\"";
+	s << "}";
 
 	mg_send_http_ok(conn, "application/json", s.str().length());
-
 	mg_write(conn, s.str().c_str(), s.str().length());
 
 	return 200;
