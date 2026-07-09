@@ -135,9 +135,8 @@ WebServer::Start(int port, const std::string& certificateFile)
 void
 WebServer::Stop()
 {
-	Logger::Log(LOG_INFO, "WebServer: stopping...");
-
-	if (fContext) {
+	if (fContext != nullptr) {
+		Logger::Log(LOG_INFO, "WebServer: stopping...");
 		mg_stop(fContext);
 		fContext = nullptr;
 	}
