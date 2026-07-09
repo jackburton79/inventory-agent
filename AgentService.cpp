@@ -50,6 +50,12 @@ AgentService::AgentService()
 {
 	fLastInventoryRequest = std::chrono::steady_clock::now() - std::chrono::minutes(1);
 
+	// Schedule the first inventory in one minute from now so it runs when the system is completely up
+	// (X takes some time on our old machines)
+
+	// TODO: make it configurable
+	fNextScheduledInventory = std::chrono::steady_clock::now() + std::chrono::minutes(1);
+
 	fAgent = new Agent();
 }
 
@@ -75,12 +81,9 @@ AgentService::Run()
 
 	fInventoryThread =
 		std::thread(&AgentService::_InventoryLoop, this);
+	fSchedulerThread =
+		std::thread(&AgentService::_SchedulingLoop, this);
 
-#if 1
-	// At start, run inventory
-	ScheduleInventory();
-	// TODO: make it configurable
-#endif
 #if 1
 	// TODO: add configuration
 	// Start the web server
@@ -91,6 +94,9 @@ AgentService::Run()
 
 	if (fInventoryThread.joinable())
 		fInventoryThread.join();
+
+	if (fSchedulerThread.joinable())
+		fSchedulerThread.join();
 
 	fServer->Stop();
 
@@ -233,4 +239,53 @@ AgentService::_InventoryLoop()
 		}
 		fInventoryRunning = false;
 	}
+}
+
+
+void
+AgentService::_SchedulingLoop()
+{
+	Logger::Log(LOG_DEBUG, "AgentService: _SchedulingLoop started");
+
+	while (fRunning) {
+		// Check if it's time to run scheduled inventory
+		if (_ShouldRunScheduledInventory()) {
+			Logger::Log(LOG_DEBUG, "AgentService: scheduled inventory trigger");
+			ScheduleInventory();
+		}
+
+		std::this_thread::sleep_for(std::chrono::minutes(1));
+	}
+
+	Logger::Log(LOG_DEBUG, "AgentService: _SchedulingLoop exiting");
+}
+
+
+bool
+AgentService::_ShouldRunScheduledInventory()
+{
+	bool shouldRun  = false;
+	Configuration* config = Configuration::Get();
+	auto now = std::chrono::steady_clock::now();
+	if (now >= fNextScheduledInventory) {
+		shouldRun = true;
+	}
+
+	// Check interval-based scheduling (e.g., every 3600 seconds)
+	std::string intervalStr = config->KeyValue("schedule_interval");
+	if (!intervalStr.empty()) {
+		try {
+			int intervalSeconds = std::stoi(intervalStr);
+			if (intervalSeconds > 0) {
+				if (shouldRun) {
+					fNextScheduledInventory = now +
+						std::chrono::seconds(intervalSeconds);
+				}
+			}
+		} catch (...) {
+			Logger::Log(LOG_ERR, "AgentService: invalid schedule-interval value");
+		}
+	}
+
+	return shouldRun;
 }
