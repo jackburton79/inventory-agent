@@ -14,6 +14,10 @@ extern "C" {
 #include "Logger.h"
 #include "http/URL.h"
 
+const std::string head = "<head>"
+		"<meta content=\"text/html; charset=UTF-8\" http-equiv=\"content-type\" />"
+		"<title>Inventory Agent</title>"
+		"</head>";
 
 static bool
 IsTrusted(const std::string& address)
@@ -26,8 +30,8 @@ IsTrusted(const std::string& address)
 
 	// TODO: move to its own method
 	// The configured server is also trusted
-	URL serverURL = Configuration::Get()->KeyValue("server");
-	const char *hostname = serverURL.Host().c_str();
+	URL serverURL(Configuration::Get()->KeyValue("server"));
+	std::string hostname = serverURL.Host();
 	if (!serverURL.Host().empty()) {
 		struct addrinfo hints;
 		struct addrinfo* res = nullptr;
@@ -37,8 +41,11 @@ IsTrusted(const std::string& address)
 		hints.ai_flags = AI_CANONNAME;
 
 		int status;
-		if ((status = getaddrinfo(hostname, NULL, &hints, &res)) != 0)
+		if ((status = getaddrinfo(hostname.c_str(), NULL, &hints, &res)) != 0) {
+			Logger::LogFormat(LOG_ERR, "getaddrinfo failed for %s: %s", hostname.c_str(),
+				::strerror(errno));
 			return false;
+		}
 
 		for (struct addrinfo* p = res; p != NULL; p = p->ai_next) {
 			void *addr;
@@ -56,13 +63,15 @@ IsTrusted(const std::string& address)
 			}
 
 			char ipString[INET6_ADDRSTRLEN];
-			if (inet_ntop(p->ai_family, addr, ipString, sizeof ipString) == nullptr)
+			if (inet_ntop(p->ai_family, addr, ipString, sizeof ipString) == nullptr) {
+				Logger::LogFormat(LOG_ERR, "inet_ntop returned null");
 				continue;
+			}
 
-			Logger::LogFormat(LOG_INFO, "%s: %s\n", ipver, ipString);
-
+			Logger::LogFormat(LOG_DEBUG, "Checking if %s (%s) is trusted:", ipString, ipver);
 			if (address.compare(ipString) == 0) {
 				freeaddrinfo(res);
+				Logger::LogFormat(LOG_DEBUG, "%s (%s) is trusted", ipString, ipver);
 				return true;
 			}
 		}
@@ -144,11 +153,8 @@ WebServer::RootHandler(mg_connection* conn, void* cbdata)
 	std::string statusString = thisPointer->fAgentService.StatusString();
 
 	std::string html =
-		std::string("<html>"
-		"<head>"
-		"<meta content=\"text/html; charset=UTF-8\" http-equiv=\"content-type\" />"
-		"<title>Inventory Agent</title>"
-		"</head>"
+		std::string("<html>") +
+		head + std::string(
 		"<body>"
 		"<div id='background'>"
 		"<p id='version' class='block'>This is ") + Agent::AgentString() + std::string("</p>"
@@ -227,21 +233,23 @@ WebServer::NowHandler(mg_connection* conn, void* cbdata)
 
 	// TODO: Return access denied page
 	if (!IsTrusted(requestInfo->remote_addr)) {
-		const char* html =
-			"<html>"
-			"<head><title>Inventory Agent</title></head>"
+		std::string html = std::string("<html>") +
+			head + std::string(
 			"<body>"
+			"<div id=\"background\">"
 			"<p>Access denied</p>"
+			"<p><a href=\"/\">Back</a></p>"
+			"</div>"
 			"</body>"
-			"</html>";
+			"</html>");
 
 		mg_printf(conn,
 			"HTTP/1.1 400 OK\r\n"
 			"Content-Type: text/html\r\n"
 			"Content-Length: %zu\r\n"
 			"\r\n%s",
-			::strlen(html), html);
-		return 400;
+			html.length(), html.c_str());
+		return 200;
 	}
 
 	// schedule an immediate inventory
@@ -250,20 +258,19 @@ WebServer::NowHandler(mg_connection* conn, void* cbdata)
 
 	// TODO: check the result of ScheduleInventory and reply with it
 
-	const char* html =
-		"<html>"
-		"<head><title>Inventory Agent</title></head>"
+	std::string html = std::string("<html>") +
+		head + std::string(
 		"<body>"
 		"<p>OK</p>"
 		"</body>"
-		"</html>";
+		"</html>");
 
 	mg_printf(conn,
 		"HTTP/1.1 200 OK\r\n"
 		"Content-Type: text/html\r\n"
 		"Content-Length: %zu\r\n"
 		"\r\n%s",
-		::strlen(html), html);
+		html.length(), html.c_str());
 
 	return 200;
 }

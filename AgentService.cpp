@@ -76,10 +76,11 @@ AgentService::Run()
 	fInventoryThread =
 		std::thread(&AgentService::_InventoryLoop, this);
 
+#if 1
 	// At start, run inventory
 	ScheduleInventory();
 	// TODO: make it configurable
-
+#endif
 #if 1
 	// TODO: add configuration
 	// Start the web server
