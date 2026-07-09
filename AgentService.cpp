@@ -2,7 +2,9 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <iomanip>
 #include <mutex>
+#include <sstream>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -170,8 +172,10 @@ AgentService::StatusString() const
 std::string
 AgentService::LastInventoryTime() const
 {
-	std::time_t t = std::chrono::system_clock::to_time_t(fLastInventoryEnd);
-	return std::ctime(&t);
+	std::time_t timePoint = std::chrono::system_clock::to_time_t(fLastInventoryEnd);
+	std::ostringstream s;
+	s << std::put_time(std::localtime(&timePoint), "%Y-%m-%d %X");
+	return s.str();
 }
 
 
@@ -262,7 +266,7 @@ AgentService::_SchedulingLoop()
 			ScheduleInventory();
 		}
 
-		std::this_thread::sleep_for(std::chrono::seconds(10));
+		std::this_thread::sleep_for(std::chrono::seconds(2));
 	}
 
 	Logger::Log(LOG_DEBUG, "AgentService: _SchedulingLoop exiting");
