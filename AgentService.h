@@ -54,6 +54,7 @@ private:
 	std::chrono::system_clock::time_point fLastInventoryStart;
 	std::chrono::system_clock::time_point fLastInventoryEnd;
 	std::chrono::steady_clock::time_point fNextScheduledInventory;
+	std::chrono::steady_clock::time_point fLastScheduledInventoryRun;
 
 	std::atomic_bool fInventoryRequested;
 	std::atomic_bool fInventoryRunning;

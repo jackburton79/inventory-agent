@@ -264,6 +264,7 @@ AgentService::_SchedulingLoop()
 		if (_ShouldRunScheduledInventory()) {
 			Logger::Log(LOG_DEBUG, "AgentService: scheduled inventory trigger");
 			ScheduleInventory();
+			fLastScheduledInventoryRun = std::chrono::steady_clock::now();
 		}
 
 		std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -277,12 +278,12 @@ bool
 AgentService::_ShouldRunScheduledInventory()
 {
 	bool shouldRun  = false;
-	Configuration* config = Configuration::Get();
 	auto now = std::chrono::steady_clock::now();
-	if (now >= fNextScheduledInventory) {
+	if (now >= fNextScheduledInventory && fLastScheduledInventoryRun < fNextScheduledInventory) {
 		shouldRun = true;
 	}
 
+	Configuration* config = Configuration::Get();
 	// Check interval-based scheduling (e.g., every 3600 seconds)
 	std::string intervalStr = config->KeyValue("schedule_interval");
 	if (!intervalStr.empty()) {
