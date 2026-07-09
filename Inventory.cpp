@@ -1200,8 +1200,8 @@ Inventory::_HandleResponse(HTTP& httpObject)
 		}
 	}
 
-	Logger::LogFormat(LOG_ERR, "Server replied %s", responseHeader2.StatusString().c_str());
-	Logger::LogFormat(LOG_ERR, "%s", responseHeader2.ToString().c_str());
+	Logger::LogFormat(LOG_DEBUG, "Server replied %s", responseHeader2.StatusString().c_str());
+	Logger::LogFormat(LOG_DEBUG, "%s", responseHeader2.ToString().c_str());
 
 	if (responseHeader2.ContentType() == "application/xml") {
 		size_t contentLength = responseHeader2.ContentLength();
