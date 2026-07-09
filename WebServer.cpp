@@ -244,7 +244,7 @@ WebServer::NowHandler(mg_connection* conn, void* cbdata)
 			"</html>");
 
 		mg_printf(conn,
-			"HTTP/1.1 400 OK\r\n"
+			"HTTP/1.1 200 OK\r\n"
 			"Content-Type: text/html\r\n"
 			"Content-Length: %zu\r\n"
 			"\r\n%s",
