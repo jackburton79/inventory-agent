@@ -31,7 +31,7 @@ public:
 	~RunningProcessesList();
 
 private:
-	void _ReadProcessInfo(process_info& info, std::string pid);
+	void _ReadProcessInfo(process_info& info, const std::string& pid);
 };
 
 #endif /* RUNNINGPROCESSES_H_ */
