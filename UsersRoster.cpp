@@ -38,7 +38,7 @@ UsersRoster::UsersRoster()
 				entry.login = record->ut_user;
 			else {
 				entry.login = line.substr(0, domainSeparatorPos);
-				entry.logindomain = line.substr(domainSeparatorPos + 1, -1);
+				entry.logindomain = line.substr(domainSeparatorPos + 1);
 			}
 			time_t loginTime = record->ut_tv.tv_sec;
 			entry.logintime = loginTime;
