@@ -96,14 +96,14 @@ Agent::PrintToStream()
 
 
 void
-Agent::SaveToFile(const std::string filePathName)
+Agent::SaveToFile(const std::string& filePathName)
 {
 	fInventory->Save(filePathName.c_str());
 }
 
 
 bool
-Agent::SendToServer(const std::string serverString)
+Agent::SendToServer(const std::string& serverString)
 {
 	try {
 		return fInventory->Send(serverString.c_str());

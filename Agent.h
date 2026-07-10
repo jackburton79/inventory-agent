@@ -22,8 +22,8 @@ public:
 	time_t LastUpdated() const;
 
 	void PrintToStream();
-	void SaveToFile(const std::string filePathName);
-	bool SendToServer(const std::string serverString);
+	void SaveToFile(const std::string& filePathName);
+	bool SendToServer(const std::string& serverString);
 
 	static std::string Version();
 	static std::string LegacyAgentString();
