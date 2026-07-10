@@ -1,6 +1,7 @@
 USER_OBJS :=
 
-LIBS := -lz -lcrypto -lssl -ldl
+LIBS := -lz -lcrypto -lssl
+LIBS += -ldl -lpthread
 
 CFLAGS := -fPIE -O2 -Wall \
 	-DUSE_SSL \
