@@ -31,9 +31,9 @@ public:
 	const char* Data() const;
 	void SetData(char* data);
 
+private:
 	HTTPResponseHeader& operator=(const HTTPResponseHeader& header);
 
-private:
 	std::string fText;
 	int fCode;
 	char* fData;
