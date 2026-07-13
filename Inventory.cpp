@@ -531,6 +531,10 @@ Inventory::_AddOperatingSystemInfo()
 	kernelVersion->LinkEndChild(fDocument->NewText(gComponents["OS"].fields["release"].c_str()));
 	os->LinkEndChild(kernelVersion);
 
+	tinyxml2::XMLElement* bootTime = fDocument->NewElement("BOOT_TIME");
+	bootTime->LinkEndChild(fDocument->NewText(gComponents["OS"].fields["boot_time"].c_str()));
+	os->LinkEndChild(bootTime);
+
 	tinyxml2::XMLElement* dnsDomain = fDocument->NewElement("DNS_DOMAIN");
 	dnsDomain->LinkEndChild(fDocument->NewText(gComponents["OS"].fields["domainname"].c_str()));
 	os->LinkEndChild(dnsDomain);
