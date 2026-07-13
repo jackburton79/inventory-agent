@@ -546,8 +546,7 @@ Inventory::_AddOperatingSystemInfo()
 	os->LinkEndChild(fqdn);
 
 #if 0
-	// TODO: Impelement these
-	<BOOT_TIME>2024-03-26 07:58:04</BOOT_TIME>
+	// TODO: Implement these
 	<FULL_NAME>
 	<HOSTID>
 	<INSTALL_DATE>
