@@ -53,7 +53,7 @@ RunningProcessesList::~RunningProcessesList()
 
 
 void
-RunningProcessesList::_ReadProcessInfo(process_info& info, std::string pid)
+RunningProcessesList::_ReadProcessInfo(process_info& info, const std::string& pid)
 {
 	info.pid = strtol(pid.c_str(), NULL, 10);
 	info.cmdline = ProcReader(("/proc/" + pid + std::string("/cmdline")).c_str()).ReadLine();
