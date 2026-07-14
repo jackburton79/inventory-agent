@@ -40,7 +40,7 @@ unsigned int convert_to_MBytes(const std::string& string);
 
 static inline std::string& ltrim(std::string& s) {
 	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char c) {
-		return std::isspace(c);
+		return !std::isspace(c);
 	}));
 	return s;
 }
@@ -48,7 +48,7 @@ static inline std::string& ltrim(std::string& s) {
 
 static inline std::string& rtrim(std::string& s) {
 	s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char c) {
-		return std::isspace(c);
+		return !std::isspace(c);
 	}).base(), s.end());
 	return s;
 }
