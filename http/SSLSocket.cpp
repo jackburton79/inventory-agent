@@ -101,9 +101,7 @@ void
 SSLSocket::_SSLInit()
 {
 	if (sSSLContext == NULL) {
-		SSL_load_error_strings();
-		SSL_library_init();
-		sSSLContext = SSL_CTX_new(SSLv23_client_method());
+		sSSLContext = SSL_CTX_new(TLS_client_method());
 		if (sSSLContext == NULL)
 			throw std::runtime_error("SSL: can't initialize SSL Library");
 	}
