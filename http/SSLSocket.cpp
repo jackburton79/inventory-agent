@@ -82,7 +82,7 @@ SSLSocket::Connect(const struct sockaddr *address, socklen_t addrLen)
 	// Connection estabilished successfully.
 	if (!_CheckCertificate()) {
 		Logger::Log(LOG_DEBUG, "SSLSocket::Connect(): certificate is not valid!");
-		if (Configuration::Get()->KeyValue("ssl_trust_server") != CONF_VALUE_TRUE)
+		if (Configuration::Get()->KeyValue("no_ssl_check") != CONF_VALUE_TRUE)
 			return -1;
 	}
 	return 0;
