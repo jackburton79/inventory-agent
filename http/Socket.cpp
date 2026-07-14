@@ -118,12 +118,44 @@ Socket::Connect(const char* hostName, const int port)
 size_t
 Socket::Read(void* data, const size_t& length)
 {
-	return ::read(fFD, data, length);
+	char* ptr = static_cast<char*>(data);
+	size_t totalRead = 0;
+	while (totalRead < length) {
+		ssize_t bytesRead = ::read(fFD, ptr + totalRead, length - totalRead);
+		if (bytesRead < 0) {
+			if (errno == EINTR)
+				continue;
+
+			return totalRead;
+		}
+
+		if (bytesRead == 0)
+			break;
+
+		totalRead += bytesRead;
+	}
+
+	return totalRead;
 }
 
 
 size_t
 Socket::Write(const void* data, const size_t& length)
 {
-	return ::write(fFD, data, length);
+	const char* ptr =
+		static_cast<const char*>(data);
+	size_t totalWritten = 0;
+	while (totalWritten < length) {
+		ssize_t bytesWritten = ::write(fFD, ptr + totalWritten, length - totalWritten);
+		if (bytesWritten < 0) {
+			if (errno == EINTR)
+				continue;
+
+			return totalWritten;
+		}
+
+		totalWritten += bytesWritten;
+	}
+
+	return totalWritten;
 }

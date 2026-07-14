@@ -92,14 +92,40 @@ SSLSocket::Connect(const struct sockaddr *address, socklen_t addrLen)
 size_t
 SSLSocket::Read(void* data, const size_t& length)
 {
-	return SSL_read(fSSLConnection, data, length);
+	char* ptr = static_cast<char*>(data);
+	size_t totalRead = 0;
+
+	while (totalRead < length) {
+		int bytesRead =
+			SSL_read(fSSLConnection, ptr + totalRead, static_cast<int>(length - totalRead));
+
+		if (bytesRead <= 0)
+			break;
+
+		totalRead += bytesRead;
+	}
+
+	return totalRead;
 }
 
 
 size_t
 SSLSocket::Write(const void* data, const size_t& length)
 {
-	return SSL_write(fSSLConnection, data, length);
+	const char* ptr = static_cast<const char*>(data);
+
+	size_t totalWritten = 0;
+	while (totalWritten < length) {
+		int bytesWritten = SSL_write(fSSLConnection, ptr + totalWritten,
+			static_cast<int>(length - totalWritten));
+
+		if (bytesWritten <= 0)
+			break;
+
+		totalWritten += bytesWritten;
+	}
+
+	return totalWritten;
 }
 
 
