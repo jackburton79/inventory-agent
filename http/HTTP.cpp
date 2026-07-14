@@ -153,9 +153,10 @@ HTTP::Request(const HTTPRequestHeader& header, const void* data, const size_t da
 	if (fCurrentRequest.URL() == "")
 		fCurrentRequest.SetValue(HTTPHost, fHost);
 
-	std::string string = fCurrentRequest.ToString().append(CRLF);
+	std::string request = fCurrentRequest.ToString();
+	request.append(CRLF);
 
-	if (fSocket->Write(string.c_str(), string.length()) != string.length()) {
+	if (fSocket->Write(request.c_str(), request.length()) != request.length()) {
 		fLastError = errno;
 		return errno;
 	}
@@ -197,13 +198,15 @@ HTTP::Request(const HTTPRequestHeader& header, const void* data, const size_t da
 	if (fLastResponse.HasContentLength()) {
 		const size_t contentLength = fLastResponse.ContentLength();
 		// Read data
-		char* resultData = new char[contentLength];
+		char* resultData = new char[contentLength + 1];
 		int read = Read(resultData, contentLength);
 		if (read != (int)contentLength) {
 			fLastError = read;
 			delete[] resultData;
 			return fLastError;
 		}
+		resultData[contentLength] = '\0';
+
 		fLastResponse.SetData(resultData);
 	}
 	return 0;
