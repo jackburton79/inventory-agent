@@ -39,24 +39,32 @@ std::string RAM_type_from_description(const std::string& description);
 unsigned int convert_to_MBytes(const std::string& string);
 
 static inline std::string& ltrim(std::string& s) {
-	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char c) {
+		return std::isspace(c);
+	}));
 	return s;
 }
 
+
 static inline std::string& rtrim(std::string& s) {
-	s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+	s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char c) {
+		return std::isspace(c);
+	}).base(), s.end());
 	return s;
 }
+
 
 static inline std::string& trim(std::string& s) {
 	return ltrim(rtrim(s));
 }
+
 
 static inline std::string trimmed(const std::string& s) {
 	std::string newString = s;
 	ltrim(rtrim(newString));
 	return newString;
 }
+
 
 static inline std::string int_to_string(int i) {
 	std::ostringstream stream;
