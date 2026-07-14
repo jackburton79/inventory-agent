@@ -94,8 +94,8 @@ int
 Socket::Connect(const struct hostent* hostEnt, const int port)
 {
 	struct sockaddr_in serverAddr;
-	::memset((char*)&serverAddr, 0, sizeof(serverAddr));
-	::memcpy((char*)&serverAddr.sin_addr, hostEnt->h_addr, hostEnt->h_length);
+	::memset(&serverAddr, 0, sizeof(serverAddr));
+	::memcpy(&serverAddr.sin_addr, hostEnt->h_addr, hostEnt->h_length);
 	serverAddr.sin_family = hostEnt->h_addrtype;
 	serverAddr.sin_port = (unsigned short)htons(port);
 
