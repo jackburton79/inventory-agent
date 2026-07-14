@@ -351,7 +351,7 @@ ParseRoutes(struct nlmsghdr* nlHdr, route_info* rtInfo,
 		return false;
 
 	int rtLen = RTM_PAYLOAD(nlHdr);
-	for (rtattr* rtAttr = (rtattr*)RTM_RTA(rtMsg);
+	for (rtattr* rtAttr = RTM_RTA(rtMsg);
 			RTA_OK(rtAttr, rtLen);
 			rtAttr = RTA_NEXT(rtAttr, rtLen)) {
 		switch (rtAttr->rta_type) {
@@ -389,7 +389,7 @@ ReadRouteInfoFromSocket(int sockFd, char *bufPtr, int seqNum, int pId)
 		if ((readLen = ::recv(sockFd, bufPtr, kBufSize - msgLen, 0)) < 0)
 			return -1;
 
-		nlHdr = (nlmsghdr*)bufPtr;
+		nlHdr = reinterpret_cast<nlmsghdr*>(bufPtr);
 
 		// Check if the header is valid
 		if ((NLMSG_OK(nlHdr, readLen) == (int)0) ||
