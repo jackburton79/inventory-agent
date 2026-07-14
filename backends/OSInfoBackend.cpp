@@ -96,7 +96,7 @@ OSInfoBackend::Run()
 		// Calculate boot time
 		time_t bootTime = now - info.uptime;
 		struct tm *bootTm = localtime(&bootTime);
-		if (bootTm != nullptr) {
+		if (bootTm != NULL) {
 			char buffer[64];
 			if (strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", bootTm) != 0)
 				os.fields["boot_time"] = buffer;
