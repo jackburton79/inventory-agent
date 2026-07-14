@@ -14,7 +14,7 @@ class Socket;
 class SocketGetter {
 public:
 	SocketGetter();
-	Socket* GetSocket(const std::string& protocol);
+	Socket* GetSocket(const std::string& protocol, const std::string& options = "");
 };
 
 #endif // __SOCKETGETTER_H

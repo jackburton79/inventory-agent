@@ -14,7 +14,7 @@
 
 class SSLSocket : public Socket {
 public:
-	SSLSocket();
+	SSLSocket(const std::string& options = "");
 	virtual ~SSLSocket();
 
 	virtual int Open(int domain, int type, int protocol);
@@ -30,6 +30,7 @@ private:
 	bool _CheckCertificate();
 
 	SSL* fSSLConnection;
+	bool fNoSSLCheck;
 };
 
 #endif // SSLSOCKET_H

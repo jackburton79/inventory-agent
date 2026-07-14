@@ -6,6 +6,8 @@
  */
 
 #include "HTTP.h"
+
+#include "Configuration.h"
 #include "HTTPDefines.h"
 #include "HTTPRequestHeader.h"
 #include "HTTPResponseHeader.h"
@@ -248,7 +250,10 @@ HTTP::_HandleConnection(const std::string& string)
 	fPort = port;
 
 	try {
-		fSocket = SocketGetter().GetSocket(url.Protocol());
+		std::string socketOptions;
+		if (Configuration::Get()->KeyValue("no_ssl_check") == CONF_VALUE_TRUE)
+			socketOptions.append("no_ssl_check");
+		fSocket = SocketGetter().GetSocket(url.Protocol(), socketOptions);
 		if (fSocket->Open(AF_INET, SOCK_STREAM, 0) < 0)
 			throw errno;
 	} catch (int& error) {

@@ -21,7 +21,7 @@
 #include <unistd.h>
 
 
-Socket::Socket()
+Socket::Socket(const std::string& options)
 	:
 	fFD(-1)
 {

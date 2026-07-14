@@ -19,18 +19,21 @@
 #include <unistd.h>
 
 
-#include "Configuration.h"
 #include "Logger.h"
 
 static SSL_CTX* sSSLContext = NULL;
 
 
-SSLSocket::SSLSocket()
+SSLSocket::SSLSocket(const std::string& options)
 	:
-	fSSLConnection(NULL)
+	fSSLConnection(NULL),
+	fNoSSLCheck(false)
 {
 	if (sSSLContext == NULL)
 		_SSLInit();
+
+	if (options.find("no_ssl_check") != std::string::npos)
+		fNoSSLCheck = true;
 }
 
 
@@ -80,10 +83,9 @@ SSLSocket::Connect(const struct sockaddr *address, socklen_t addrLen)
 	}
 
 	// Connection estabilished successfully.
-	if (!_CheckCertificate()) {
+	if (!fNoSSLCheck && !_CheckCertificate()) {
 		Logger::Log(LOG_DEBUG, "SSLSocket::Connect(): certificate is not valid!");
-		if (Configuration::Get()->KeyValue("no_ssl_check") != CONF_VALUE_TRUE)
-			return -1;
+		return -1;
 	}
 	return 0;
 }

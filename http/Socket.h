@@ -13,7 +13,7 @@
 
 class Socket {
 public:
-	Socket();
+	Socket(const std::string& options = "");
 	virtual ~Socket();
 
 	virtual int Open(int domain, int type, int protocol);
