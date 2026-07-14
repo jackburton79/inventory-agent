@@ -240,12 +240,11 @@ Inventory::Send(const char* serverUrl)
 	requestHeader.SetValue("Pragma", "no-cache");
 	requestHeader.SetValue("Keep-Alive", "300");
 	requestHeader.SetValue("Connection", "Keep-Alive, TE");
+	requestHeader.SetContentLength(prologLength);
 	if (compress) {
 		requestHeader.SetValue("TE", "deflate, gzip");
 		requestHeader.SetContentType("application/x-compress");
 	}
-
-	requestHeader.SetContentLength(prologLength);
 
 	// TODO: Improve.
 	if (inventoryUrl.Username() != "") {
@@ -370,20 +369,21 @@ Inventory::Send(const char* serverUrl)
 	requestHeader.SetValue("Pragma", "no-cache");
 	requestHeader.SetValue("Keep-Alive", "300");
 	requestHeader.SetValue("Connection", "Keep-Alive");
+	requestHeader.SetContentLength(inventoryLength);
 	if (compress) {
 		requestHeader.SetValue("TE", "deflate, gzip");
 		requestHeader.SetContentType("application/x-compress");
 	} else
 		requestHeader.SetContentType("application/xml");
-	requestHeader.SetContentLength(inventoryLength);
+
 	requestHeader.SetUserAgent(userAgentString);
+
 	if (inventoryUrl.Username() != "") {
 		requestHeader.SetAuthentication(HTTP_AUTH_TYPE_BASIC,
 						inventoryUrl.Username(), inventoryUrl.Password());
 	}
 
 	Logger::LogFormat(LOG_DEBUG, "Inventory::Send(): Sending inventory data...");
-
 	if (httpObject.Request(requestHeader, inventoryData, inventoryLength) != 0) {
 		delete[] inventoryData;
 		Logger::LogFormat(LOG_ERR, "Inventory::Send(): error while sending inventory: %s",
