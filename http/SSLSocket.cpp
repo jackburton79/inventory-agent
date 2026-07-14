@@ -19,6 +19,9 @@
 #include <unistd.h>
 
 
+#include "Configuration.h"
+#include "Logger.h"
+
 static SSL_CTX* sSSLContext = NULL;
 
 
@@ -77,8 +80,11 @@ SSLSocket::Connect(const struct sockaddr *address, socklen_t addrLen)
 	}
 
 	// Connection estabilished successfully.
-	if (!_CheckCertificate())
-		return -1;
+	if (!_CheckCertificate()) {
+		Logger::Log(LOG_DEBUG, "SSLSocket::Connect(): certificate is not valid!");
+		if (Configuration::Get()->KeyValue("ssl_trust_server") != CONF_VALUE_TRUE)
+			return -1;
+	}
 	return 0;
 }
 
@@ -146,9 +152,6 @@ VerifyHostname(X509 *cert, const std::string& hostname)
 bool
 SSLSocket::_CheckCertificate()
 {
-	if (true)
-		return true;
-
 	X509 *cert = SSL_get_peer_certificate(fSSLConnection);
 	if (cert == NULL)
 		return false;
