@@ -218,6 +218,9 @@ Inventory::Send(const char* serverUrl)
 		return false;
 	}
 
+	Logger::Log(LOG_DEBUG, "Prolog:");
+	Logger::Log(LOG_DEBUG, XML::ToString(prolog).c_str());
+
 	if (compress) {
 		Logger::Log(LOG_DEBUG, "Compressing prolog...");
 		size_t destLength;
@@ -241,6 +244,7 @@ Inventory::Send(const char* serverUrl)
 		requestHeader.SetValue("TE", "deflate, gzip");
 		requestHeader.SetContentType("application/x-compress");
 	}
+
 	requestHeader.SetContentLength(prologLength);
 
 	// TODO: Improve.
@@ -328,9 +332,9 @@ Inventory::Send(const char* serverUrl)
 			return false;
 		}
 
-#if 0
-		std::cout << XML::ToString(document) << std::endl;
-#endif
+		Logger::Log(LOG_DEBUG, "Document:");
+		Logger::Log(LOG_DEBUG, XML::ToString(document).c_str());
+
 		std::string serverResponse = XML::GetElementText(document, "RESPONSE");
 		Logger::LogFormat(LOG_DEBUG, "Inventory::Send(): server replied %s", serverResponse.c_str());
 		if (serverResponse == "SEND")
@@ -359,6 +363,7 @@ Inventory::Send(const char* serverUrl)
 		inventoryData = compressedData;
 		inventoryLength = compressedLength;
 	}
+
 
 	requestHeader.Clear();
 	requestHeader.SetRequest("POST", inventoryUrl.URLString());
