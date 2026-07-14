@@ -19,7 +19,6 @@ public:
 
 	void RunInventory(bool noSoftware);
 	std::string LastInventoryXML() const;
-	time_t LastUpdated() const;
 
 	void PrintToStream();
 	void SaveToFile(const std::string& filePathName);
@@ -35,7 +34,6 @@ private:
 	void _SendInventory();
 
 	Inventory* fInventory;
-	time_t fLastUpdate;
 	static std::string sAgentString;
 };
 

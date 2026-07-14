@@ -35,8 +35,7 @@ std::string Agent::sAgentString;
 
 Agent::Agent()
 	:
-	fInventory(nullptr),
-	fLastUpdate(0)
+	fInventory(nullptr)
 {
 	fInventory = new Inventory();
 }
@@ -69,8 +68,6 @@ Agent::RunInventory(bool noSoftware)
 		return;
 
 	Logger::Log(LOG_INFO, "Agent::RunInventory(): inventory built correctly");
-
-	fLastUpdate = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 }
 
 
@@ -78,13 +75,6 @@ std::string
 Agent::LastInventoryXML() const
 {
 	return fInventory->ToString();
-}
-
-
-time_t
-Agent::LastUpdated() const
-{
-	return fLastUpdate;
 }
 
 
