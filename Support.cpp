@@ -30,7 +30,7 @@ CommandStreamBuffer::CommandStreamBuffer(const char* fileName, const char* mode)
 	fFile(NULL),
 	fBuffer(NULL)
 {
-	CommandStreamBuffer* buf = open(fileName, mode);
+	const CommandStreamBuffer* buf = open(fileName, mode);
 	if (buf == NULL)
 		throw std::runtime_error("CommandStreamBuffer: cannot open file");
 }

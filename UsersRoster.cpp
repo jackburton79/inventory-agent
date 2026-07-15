@@ -25,11 +25,11 @@ operator<(const user_entry& A, const user_entry& B)
 
 UsersRoster::UsersRoster()
 {
-	std::set<user_entry> userSet;
-	setutxent();
+	::setutxent();
 
+	std::set<user_entry> userSet;
 	struct utmpx* record = NULL;
-	while ((record = getutxent()) != NULL) {
+	while ((record = ::getutxent()) != NULL) {
 		if (record->ut_type == USER_PROCESS) {
 			user_entry entry;
 			std::string line = record->ut_user;
@@ -42,16 +42,17 @@ UsersRoster::UsersRoster()
 			}
 			time_t loginTime = record->ut_tv.tv_sec;
 			entry.logintime = loginTime;
+
 			struct tm timeInfoStruct;
-			struct tm* timeinfo = localtime_r(&loginTime, &timeInfoStruct);
+			const struct tm* timeinfo = ::localtime_r(&loginTime, &timeInfoStruct);
 			char timeString[64];
-			strftime(timeString, sizeof(timeString), "%a %b %d %R", timeinfo);
+			::strftime(timeString, sizeof(timeString), "%a %b %d %R", timeinfo);
 			entry.logintimestring = timeString;
 			userSet.insert(entry);
 		}
 	}
 
-	endutxent();
+	::endutxent();
 
 	// Only insert one entry for user, otherwise GLPI rejects the inventory
 	std::set<user_entry>::const_iterator i;

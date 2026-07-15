@@ -88,17 +88,18 @@ OSInfoBackend::Run()
 
 #ifdef __linux
 	struct sysinfo info;
-	if (sysinfo(&info) == 0) {
-		time_t now = time(NULL);
+	if (::sysinfo(&info) == 0) {
+		time_t now = ::time(NULL);
 		if (now == (time_t)-1) {
 			return EXIT_FAILURE;
 		}
 		// Calculate boot time
 		time_t bootTime = now - info.uptime;
-		struct tm *bootTm = localtime(&bootTime);
+		struct tm timeInfoStruct;
+		const struct tm* bootTm = ::localtime_r(&bootTime, &timeInfoStruct);
 		if (bootTm != nullptr) {
 			char buffer[64];
-			if (strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", bootTm) != 0)
+			if (::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", bootTm) != 0)
 				os.fields["boot_time"] = buffer;
 		}
 	}
