@@ -21,6 +21,8 @@ HTTPRequestHeader::HTTPRequestHeader()
 
 HTTPRequestHeader::HTTPRequestHeader(const HTTPRequestHeader& header)
 {
+	//Full copy is done in the operator=()
+
 	*this = header;
 }
 
