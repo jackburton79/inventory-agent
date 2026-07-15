@@ -235,7 +235,7 @@ HTTP::_HandleConnection(const std::string& string)
 	if (fSocket != NULL && fSocket->IsOpened()) {
 		if (hostName == fHost && port == fPort) {
 			// But not if the server closed it from its side
-			HTTPResponseHeader lastResponse = LastResponse();
+			const HTTPResponseHeader& lastResponse = LastResponse();
 			if (!lastResponse.HasKey("connection")
 				|| lastResponse.Value("connection") != "close") {
 				return true;

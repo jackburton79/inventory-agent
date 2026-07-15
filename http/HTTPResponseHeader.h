@@ -15,7 +15,7 @@ public:
 	HTTPResponseHeader();
 	HTTPResponseHeader(int code, const std::string& text = "",
 			const int majVersion = 1, const int minVersion = 1);
-	HTTPResponseHeader(const HTTPResponseHeader& header);
+
 	~HTTPResponseHeader();
 
 	std::string ReasonPhrase() const;
@@ -31,8 +31,12 @@ public:
 	const char* Data() const;
 	void SetData(char* data);
 
+	// Deleted constructor and operator=
+	HTTPResponseHeader(const HTTPResponseHeader& header) = delete;
+	HTTPResponseHeader& operator=(const HTTPResponseHeader& header) = delete;
+
 private:
-	HTTPResponseHeader& operator=(const HTTPResponseHeader& header);
+
 
 	std::string fText;
 	int fCode;

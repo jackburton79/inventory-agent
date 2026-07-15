@@ -28,15 +28,6 @@ HTTPResponseHeader::HTTPResponseHeader(int code, const std::string& text,
 }
 
 
-HTTPResponseHeader::HTTPResponseHeader(const HTTPResponseHeader& header)
-	:
-	fCode(0),
-	fData(NULL)
-{
-	*this = header;
-}
-
-
 HTTPResponseHeader::~HTTPResponseHeader()
 {
 	delete[] fData;
@@ -109,14 +100,3 @@ HTTPResponseHeader::SetData(char* data)
 	fData = data;
 }
 
-
-HTTPResponseHeader&
-HTTPResponseHeader::operator=(const HTTPResponseHeader& header)
-{
-	HTTPHeader::operator=(header);
-
-	fText = header.fText;
-	fCode = header.fCode;
-
-	return *this;
-}
