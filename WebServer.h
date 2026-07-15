@@ -21,6 +21,7 @@ private:
 	static int StatusHandler(mg_connection* conn, void* cbdata);
 	static int InfoHandler(mg_connection* conn, void* cbdata);
 	static int NowHandler(mg_connection* conn, void* cbdata);
+	static int CSSHandler(mg_connection* conn, void* cbdata);
 
 private:
 	mg_context* fContext;

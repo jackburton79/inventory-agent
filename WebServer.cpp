@@ -18,6 +18,7 @@ extern "C" {
 const std::string head = "<head>"
 		"<meta content=\"text/html; charset=UTF-8\" http-equiv=\"content-type\" />"
 		"<title>Inventory Agent</title>"
+		"<link rel=\"stylesheet\" href=\"site.css\" type=\"text/css\" />"
 		"</head>";
 
 static bool
@@ -127,6 +128,7 @@ WebServer::Start(int port, const std::string& certificateFile)
 	mg_set_request_handler(fContext, "/now", NowHandler, this);
 	mg_set_request_handler(fContext, "/status", StatusHandler, this);
 	mg_set_request_handler(fContext, "/info", InfoHandler, this);
+	mg_set_request_handler(fContext, "/site.css", CSSHandler, this);
 
 	return true;
 }
@@ -262,3 +264,51 @@ WebServer::NowHandler(mg_connection* conn, void* cbdata)
 
 	return 200;
 }
+
+
+int
+WebServer::CSSHandler(mg_connection* conn, void* cbdata)
+{
+	std::string css =
+		"body {"
+			"  font-family: sans-serif;"
+			"  color: black;"
+			"  text-align: center;"
+			"  margin: 0 auto;"
+		"}"
+		" "
+		"a {"
+		"  color: black;"
+		"  text-decoration: underline;"
+		"  font-family: sans-serif;"
+		"}"
+		" "
+		"a:hover {"
+		"  color: #ff9900;"
+		"  text-decoration: underline;"
+		"  font-family: sans-serif;"
+		"}"
+		" "
+		/*"#background {"
+		"  padding: 40px 80px 300px;"
+		"  background: url(logo.png);"
+		"  background-repeat: no-repeat;"
+		"  background-origin: content-box;"
+		"  background-clip: padding-box;"
+		"}"*/
+		" "
+		".block {"
+		"  padding-bottom: 1.5em;"
+		"}"
+		" "
+		"#force {"
+		"  margin-top: 2.5em;"
+		"}"
+		;
+
+	mg_send_http_ok(conn, "text/css", css.length());
+	mg_write(conn, css.c_str(), css.length());
+
+	return 200;
+}
+
