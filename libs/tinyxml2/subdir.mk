@@ -12,12 +12,13 @@ OBJS += \
 CPP_DEPS += \
 ./libs/tinyxml2/tinyxml2.d
 
+LOCAL_CXXFLAGS = $(CXXFLAGS) -DTIXML_USE_STL
+
 # Each subdirectory must supply rules for building sources it contributes
 libs/tinyxml2/%.o: libs/tinyxml2/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -DTIXML_USE_STL $(CXXFLAGS) -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -o "$@" "$<"
+	g++ $(LOCAL_CXXFLAGS) -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
-
 
