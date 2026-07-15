@@ -256,7 +256,7 @@ HTTP::_HandleConnection(const std::string& string)
 		fSocket = SocketGetter().GetSocket(url.Protocol(), socketOptions);
 		if (fSocket->Open(AF_INET, SOCK_STREAM, 0) < 0)
 			throw errno;
-	} catch (int& error) {
+	} catch (const int& error) {
 		fLastError = error;
 		delete fSocket;
 		fSocket = NULL;
