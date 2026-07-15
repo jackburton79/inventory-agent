@@ -33,6 +33,10 @@ public:
 	std::string ToString();
 	void Print();
 
+	// disabled
+	Inventory(const Inventory&) = delete;
+	Inventory& operator=(const Inventory& other) = delete;
+
 private:
 	int Checksum() const;
 

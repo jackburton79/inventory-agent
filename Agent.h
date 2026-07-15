@@ -28,6 +28,10 @@ public:
 	static std::string LegacyAgentString();
 	static std::string AgentString();
 
+	// disabled
+	Agent(const Agent&) = delete;
+	Agent& operator=(const Agent& other) = delete;
+
 private:
 	void _RetrieveInventory();
 	void _PrintInventory();
