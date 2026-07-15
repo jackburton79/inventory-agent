@@ -38,6 +38,10 @@ public:
 
 	AgentStatus ScheduleInventory();
 
+	// disabled
+	AgentService(const AgentService&) = delete;
+	AgentService& operator=(const AgentService& other) = delete;
+
 private:
 	void _InventoryLoop();
 	void _SchedulingLoop();
