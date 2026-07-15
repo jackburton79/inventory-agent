@@ -170,7 +170,10 @@ AgentService::StatusString() const
 std::string
 AgentService::LastInventoryTime() const
 {
-	std::time_t timePoint = std::chrono::system_clock::to_time_t(fLastInventoryEnd);
+	if (fLastInventoryEnd == std::chrono::system_clock::time_point{})
+		return "<never>";
+
+	const std::time_t timePoint = std::chrono::system_clock::to_time_t(fLastInventoryEnd);
 	std::ostringstream s;
 	s << std::put_time(std::localtime(&timePoint), "%Y-%m-%d %X");
 	return s.str();
@@ -180,7 +183,10 @@ AgentService::LastInventoryTime() const
 std::string
 AgentService::LastInventoryRequestedTime() const
 {
-	std::time_t timePoint = std::chrono::system_clock::to_time_t(fLastInventoryRequest);
+	if (fLastInventoryRequest == std::chrono::system_clock::time_point{})
+		return "<never>";
+
+	const std::time_t timePoint = std::chrono::system_clock::to_time_t(fLastInventoryRequest);
 	std::ostringstream s;
 	s << std::put_time(std::localtime(&timePoint), "%Y-%m-%d %X");
 	return s.str();
