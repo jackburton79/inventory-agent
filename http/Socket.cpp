@@ -106,7 +106,7 @@ Socket::Connect(const struct hostent* hostEnt, const int port)
 int
 Socket::Connect(const char* hostName, const int port)
 {
-	struct hostent* hostEnt = ::gethostbyname(hostName);
+	const struct hostent* hostEnt = ::gethostbyname(hostName);
 	if (hostEnt == NULL)
 		return h_errno;
 
