@@ -66,9 +66,8 @@ Configuration::Save(const char* fileName)
 {
 	try {
 		std::ofstream configFile(fileName, std::ios_base::out);
-		std::map<std::string, std::string>::const_iterator i;
-		for (i = fValues.begin(); i != fValues.end(); i++) {
-			configFile << i->first << "=" << i->second << std::endl;
+		for (const auto& value: fValues) {
+			configFile << value.first << "=" << value.second << std::endl;
 		}
 	} catch (...) {
 		return false;
@@ -93,13 +92,12 @@ Configuration::Print() const
 	std::cout << "Configuration:" << std::endl;
 	try {
 		std::cout << "Persistent:" << std::endl;
-		std::map<std::string, std::string>::const_iterator i;
-		for (i = fValues.begin(); i != fValues.end(); i++) {
-			std::cout << i->first << "=" << i->second << std::endl;
+		for (const auto& value: fValues) {
+			std::cout << value.first << "=" << value.second << std::endl;
 		}
 		std::cout << "Volatile:" << std::endl;
-		for (i = fVolatileValues.begin(); i != fVolatileValues.end(); i++) {
-			std::cout << i->first << "=" << i->second << std::endl;
+		for (const auto& volatileValues: fVolatileValues) {
+			std::cout << volatileValues.first << "=" << volatileValues.second << std::endl;
 		}
 	} catch (...) {
 	}
