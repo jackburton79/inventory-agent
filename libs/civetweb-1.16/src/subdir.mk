@@ -13,12 +13,17 @@ OBJS += \
 C_DEPS += \
 ./libs/civetweb-1.16/src/civetweb.d
 
-LOCAL_C_FLAGS = $(CFLAGS) -DUSE_SSL \
-	-DOPENSSL_API_3_0
+LOCAL_C_FLAGS = $(CFLAGS) \
+	-DUSE_SSL \
+	-DOPENSSL_API_3_0 \
+	-DNO_CGI \
+	-DNO_LUA \
+	-DNO_DUKTAPE \
+	-DNO_WEBSOCKET \
 
 # Each subdirectory must supply rules for building sources it contributes
 
-libs/civetweb-1.16/src/%.o: ../libs/civetweb-1.16/src/%.c
+libs/civetweb-1.16/src/%.o: libs/civetweb-1.16/src/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C Compiler'
 	gcc $(LOCAL_C_FLAGS) -c -fmessage-length=0 -MMD -MP \
