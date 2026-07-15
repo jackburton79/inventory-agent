@@ -50,8 +50,6 @@ AgentService::AgentService()
 	fInventoryRunning(false),
 	fRunning(false)
 {
-	fLastInventoryRequest = std::chrono::steady_clock::now() - std::chrono::minutes(1);
-
 	// Schedule the first inventory in one minute from now so it runs when the system is completely up
 	// (X takes some time on our old machines)
 
@@ -179,12 +177,22 @@ AgentService::LastInventoryTime() const
 }
 
 
+std::string
+AgentService::LastInventoryRequestedTime() const
+{
+	std::time_t timePoint = std::chrono::system_clock::to_time_t(fLastInventoryRequest);
+	std::ostringstream s;
+	s << std::put_time(std::localtime(&timePoint), "%Y-%m-%d %X");
+	return s.str();
+}
+
+
 AgentStatus
 AgentService::ScheduleInventory()
 {
 	std::lock_guard lock(fMutex);
 
-	auto now = std::chrono::steady_clock::now();
+	auto now = std::chrono::system_clock::now();
 	if (now - fLastInventoryRequest < std::chrono::minutes(1)) {
 		Logger::Log(LOG_INFO, "AgentService: inventory request ignored (rate limited)");
 		return AgentStatus::RateLimited;

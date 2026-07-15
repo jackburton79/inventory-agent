@@ -31,6 +31,7 @@ public:
 	std::string StatusString() const;
 
 	std::string LastInventoryTime() const;
+	std::string LastInventoryRequestedTime() const;
 
 	bool InventoryRequested() const;
 	bool InventoryRunning() const;
@@ -50,7 +51,7 @@ private:
 	std::condition_variable fCondition;
 	std::mutex fMutex;
 
-	std::chrono::steady_clock::time_point fLastInventoryRequest;
+	std::chrono::system_clock::time_point fLastInventoryRequest;
 	std::chrono::system_clock::time_point fLastInventoryStart;
 	std::chrono::system_clock::time_point fLastInventoryEnd;
 	std::chrono::steady_clock::time_point fNextScheduledInventory;

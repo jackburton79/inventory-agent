@@ -217,6 +217,8 @@ WebServer::InfoHandler(mg_connection* conn, void* cbdata)
 	s << ", ";
 	s << "\"status\": \"" << thisPointer->fAgentService.StatusString() << "\"";
 	s << ", ";
+	s << "\"last_inventory_requested\": \"" << thisPointer->fAgentService.LastInventoryRequestedTime() << "\"";
+	s << ", ";
 	s << "\"last_inventory\": \"" << thisPointer->fAgentService.LastInventoryTime() << "\"";
 	s << " }";
 
