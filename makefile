@@ -36,7 +36,9 @@ ifneq ($(strip $(C_UPPER_DEPS)),)
 -include $(C_UPPER_DEPS)
 endif
 endif
-
+ifneq ($(strip $(DEPS)),)
+-include $(DEPS)
+endif
 
 # Add inputs and outputs from these tool invocations to the build variables 
 
