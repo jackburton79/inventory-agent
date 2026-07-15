@@ -28,7 +28,7 @@
 #include <unistd.h>
 
 
-const char* kVersion = "3.0.2";
+const char* kVersion = "3.1.0";
 
 std::string Agent::sAgentString;
 
