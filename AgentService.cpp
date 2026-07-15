@@ -50,12 +50,6 @@ AgentService::AgentService()
 	fInventoryRunning(false),
 	fRunning(false)
 {
-	// Schedule the first inventory in one minute from now so it runs when the system is completely up
-	// (X takes some time on our old machines)
-
-	// TODO: make it configurable
-	fNextScheduledInventory = std::chrono::steady_clock::now() + std::chrono::minutes(1);
-
 	fAgent = new Agent();
 }
 
@@ -83,6 +77,11 @@ AgentService::Run()
 		std::thread(&AgentService::_InventoryLoop, this);
 	fSchedulerThread =
 		std::thread(&AgentService::_SchedulingLoop, this);
+
+	// Schedule the first inventory in one minute from now so it runs when the system is completely up
+	// (X takes some time on our old machines)
+	// TODO: make it configurable
+	fNextScheduledInventory = std::chrono::steady_clock::now() + std::chrono::minutes(1);
 
 #if 1
 	// TODO: add configuration
