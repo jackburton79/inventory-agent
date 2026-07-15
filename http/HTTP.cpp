@@ -173,7 +173,7 @@ HTTP::Request(const HTTPRequestHeader& header, const void* data, const size_t da
 	std::string replyString;
 	try {
 		_ReadLineFromSocket(replyString, fSocket);
-	} catch (int error) {
+	} catch (const int& error) {
 		fLastError = error;
 		return error;
 	}
