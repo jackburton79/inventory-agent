@@ -38,6 +38,7 @@ struct option sLongOptions[] = {
 		{ "daemonize", no_argument, 0, 'd' }, // deprecated
 		{ "daemon", no_argument, 0, 'd' },
 		{ "wait", required_argument, 0, 'w' },
+		{ "no_ssl_check", no_argument, 0, 0 },
 		{ "help", no_argument, 0, 'h' },
 		{ "logger", required_argument, 0, 0 },
 		{ "verbose", no_argument, 0, 'v' },
@@ -75,6 +76,7 @@ PrintHelpAndExit()
 	std::cout << "  -d, --daemon                       Runs continuously in background" << std::endl;
 	std::cout << "  -w, --wait <s>                     Wait for the specified amount of seconds before building the inventory" << std::endl;
 	std::cout << std::endl;
+	std::cout << "      --no_ssl_check                 Don't check server ssl certificate" << std::endl;
 	std::cout << "      --logger <backend>             Specify error log backend (STDERR / SYSLOG)." << std::endl;
 	std::cout << "                                     Default is standard error if attached to a terminal, otherwise syslog. " << std::endl;
 	std::cout << "  -v, --verbose                      Verbose mode" << std::endl;
@@ -182,6 +184,8 @@ HandleArgs(int argc, char **argv)
 					config->SetUseCurrentTimeInDeviceID(true);
 				else if (optName == "agent-string")
 					config->SetVolatileKeyValue(CONF_AGENT_STRING, optarg);
+				else if (optName == "no_ssl_check")
+					config->SetVolatileKeyValue("no_ssl_check", "true");
 				else if (optName == "logger")
 					Logger::SetLogger(optarg);
 				else if (optName == "version")
