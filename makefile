@@ -72,6 +72,12 @@ clean:
 	-$(RM) $(OBJS)$(C++_DEPS)$(C_DEPS)$(CC_DEPS)$(CPP_DEPS)$(EXECUTABLES)$(CXX_DEPS)$(C_UPPER_DEPS)$(DEPS) main.o test/urltest.o test/processors-info-test.o ocsinventory-agent test/urltest test/processors-info-test
 	-@echo ' '
 
+print-deps:
+	@echo "DEPS=$(DEPS)"
+	@echo "CPP_DEPS=$(CPP_DEPS)"
+	@echo "CXX_DEPS=$(CXX_DEPS)"
+
+
 .PHONY: all clean dependents
 .SECONDARY:
 
