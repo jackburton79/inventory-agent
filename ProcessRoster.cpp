@@ -28,7 +28,7 @@ RunningProcessesList::RunningProcessesList()
 {
 	DIR* dir = ::opendir("/proc/");
 	if (dir != NULL) {
-		dirent* entry = NULL;
+		const dirent* entry = NULL;
 		while ((entry = ::readdir(dir)) != NULL) {
 			std::string procPid = entry->d_name;
 			if (IsNumber(procPid)) {
@@ -59,7 +59,7 @@ RunningProcessesList::_ReadProcessInfo(process_info& info, const std::string& pi
 	info.cmdline = ProcReader(("/proc/" + pid + std::string("/cmdline")).c_str()).ReadLine();
 
 	std::string loginUid = ProcReader(("/proc/" + pid + std::string("/loginuid")).c_str()).ReadLine();
-	struct passwd* passwdStruct = getpwuid(strtoull(loginUid.c_str(), NULL, 10));
+	const struct passwd* passwdStruct = getpwuid(strtoull(loginUid.c_str(), NULL, 10));
 	if (passwdStruct != NULL)
 		info.user = passwdStruct->pw_name;
 	else {

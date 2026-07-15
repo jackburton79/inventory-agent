@@ -108,7 +108,7 @@ AgentService::Run()
 void
 AgentService::RunOneShot()
 {
-	Configuration* config = Configuration::Get();
+	const Configuration* config = Configuration::Get();
 	bool noSoftware = (config->KeyValue(CONF_NO_SOFTWARE) == CONF_VALUE_TRUE);
 	fAgent->RunInventory(noSoftware);
 	if (config->KeyValue(CONF_OUTPUT_STDOUT) == CONF_VALUE_TRUE)
@@ -296,7 +296,7 @@ AgentService::_ShouldRunScheduledInventory()
 		shouldRun = true;
 	}
 
-	Configuration* config = Configuration::Get();
+	const Configuration* config = Configuration::Get();
 	// Check interval-based scheduling (e.g., every 3600 seconds)
 	std::string intervalStr = config->KeyValue("schedule_interval");
 	if (!intervalStr.empty()) {

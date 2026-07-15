@@ -227,7 +227,7 @@ main(int argc, char **argv)
 		::signal(SIGINT, SignalHandler);
 		::signal(SIGTERM, SignalHandler);
 
-		Configuration* config = Configuration::Get();
+		const Configuration* config = Configuration::Get();
 		if (config->KeyValue("DAEMONIZE") == CONF_VALUE_TRUE)
 			sAgentService->Run();
 		else
