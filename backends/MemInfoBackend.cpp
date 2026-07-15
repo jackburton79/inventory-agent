@@ -48,14 +48,15 @@ MemInfoBackend::Run()
 	Component os;
 	std::string string;
 	while (std::getline(stream, string)) {
-		size_t pos;
-		if ((pos = string.find("SwapTotal:")) != std::string::npos) {
-			pos = string.find(":");
+		const std::string swapLabel = "SwapTotal";
+		const std::string memLabel = "MemTotal";
+		if ((string.compare(0, swapLabel.length(), swapLabel))) {
+			size_t pos = string.find(":");
 			std::string swapString = string.substr(pos + 1, std::string::npos);
 			int swapInt = ::strtol(trim(swapString).c_str(), NULL, 10) / 1000;
 			os.fields["swap"] = int_to_string(swapInt);
-		} else if ((pos = string.find("MemTotal:")) != std::string::npos) {
-			pos = string.find(":");
+		} else if ((string.compare(0, memLabel.length(), memLabel))) {
+			size_t pos = string.find(":");
 			std::string memString = string.substr(pos + 1, std::string::npos);
 			int memInt = ::strtol(trim(memString).c_str(), NULL, 10) / 1000;
 			os.fields["memory"] = int_to_string(memInt);
