@@ -28,7 +28,6 @@ libs/civetweb-1.16/src/%.o: libs/civetweb-1.16/src/%.c
 	@echo 'Invoking: GCC C Compiler'
 	gcc $(LOCAL_C_FLAGS) -c -fmessage-length=0 -MMD -MP \
 		-MF"$(@:%.o=%.d)" \
-		-MT"$(@:%.o=%.d)" \
 		-o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
