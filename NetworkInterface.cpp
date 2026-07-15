@@ -356,7 +356,7 @@ ParseRoutes(struct nlmsghdr* nlHdr, route_info* rtInfo,
 			rtAttr = RTA_NEXT(rtAttr, rtLen)) {
 		switch (rtAttr->rta_type) {
 			case RTA_OIF:
-				if_indextoname(*(int*)RTA_DATA(rtAttr), rtInfo->ifName);
+				if_indextoname(*reinterpret_cast<int*>(RTA_DATA(rtAttr)), rtInfo->ifName);
 				break;
 			case RTA_GATEWAY:
 				rtInfo->gateway = *reinterpret_cast<in_addr*>(RTA_DATA(rtAttr));
