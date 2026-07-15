@@ -69,7 +69,7 @@ processors-info-test: $(OBJS) $(USER_OBJS) test/processors-info-test.o
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C++_DEPS)$(C_DEPS)$(CC_DEPS)$(CPP_DEPS)$(EXECUTABLES)$(CXX_DEPS)$(C_UPPER_DEPS) main.o test/urltest.o test/processors-info-test.o ocsinventory-agent test/urltest test/processors-info-test
+	-$(RM) $(OBJS)$(C++_DEPS)$(C_DEPS)$(CC_DEPS)$(CPP_DEPS)$(EXECUTABLES)$(CXX_DEPS)$(C_UPPER_DEPS)$(DEPS) main.o test/urltest.o test/processors-info-test.o ocsinventory-agent test/urltest test/processors-info-test
 	-@echo ' '
 
 .PHONY: all clean dependents
