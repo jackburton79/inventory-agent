@@ -4,6 +4,8 @@
 
 RM := rm -rf
 
+.DEFAULT_GOAL := all
+
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include backends/subdir.mk
