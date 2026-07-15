@@ -151,6 +151,12 @@ WebServer::RootHandler(mg_connection* conn, void* cbdata)
 	const mg_request_info* requestInfo = mg_get_request_info(conn);
 	Logger::LogFormat(LOG_INFO, "RootHandler called from %s", requestInfo->remote_addr);
 
+	// This handler is called also for any handler which is not registered
+	if (::strcmp(requestInfo->local_uri, "/") != 0) {
+		Logger::LogFormat(LOG_DEBUG, "RootHandler called with: %s", requestInfo->local_uri);
+		return 0;
+	}
+
 	WebServer* thisPointer = reinterpret_cast<WebServer*>(cbdata);
 	std::string statusString = thisPointer->fAgentService.StatusString();
 
@@ -308,6 +314,21 @@ WebServer::CSSHandler(mg_connection* conn, void* cbdata)
 
 	mg_send_http_ok(conn, "text/css", css.length());
 	mg_write(conn, css.c_str(), css.length());
+
+	return 200;
+}
+
+
+int
+WebServer::NotFoundHandler(mg_connection* conn, void* cbdata)
+{
+	// TODO: Never called
+	std::string html =
+			"<title>400 Bad Request</title>"
+			"<h1>400 Bad Request</h1>";
+
+	mg_send_http_ok(conn, "text/html", html.length());
+	mg_write(conn, html.c_str(), html.length());
 
 	return 200;
 }
