@@ -14,6 +14,7 @@
 #include <netinet/in.h>
 
 #include <errno.h>
+#include <iostream>
 #include <netdb.h>
 #include <stdexcept>
 #include <stdio.h>
@@ -87,8 +88,10 @@ int
 Socket::Connect(const struct sockaddr *address, socklen_t addrLen)
 {
 	int result = ::connect(fFD, address, addrLen);
-	if (result != 0)
+	if (result != 0) {
+		std::cerr << "Connect failed: " << result << ", " << errno << std::endl;
 		return errno;
+	}
 	return result;
 }
 
