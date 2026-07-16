@@ -113,8 +113,10 @@ int
 Socket::Connect(const char* hostName, const int port)
 {
 	const struct hostent* hostEnt = ::gethostbyname(hostName);
-	if (hostEnt == NULL)
+	if (hostEnt == NULL) {
+		std::cerr << "Socket::Connect(): cannot resolve " << hostName << std::endl;
 		return h_errno;
+	}
 
 	fHostName = hostName;
 	return Connect(hostEnt, port);
