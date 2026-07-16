@@ -363,7 +363,6 @@ Inventory::Send(const char* serverUrl)
 		inventoryLength = compressedLength;
 	}
 
-
 	requestHeader.Clear();
 	requestHeader.SetRequest("POST", inventoryUrl.URLString());
 	requestHeader.SetValue("Pragma", "no-cache");
