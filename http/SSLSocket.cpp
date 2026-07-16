@@ -24,6 +24,34 @@
 static SSL_CTX* sSSLContext = NULL;
 
 
+static const char*
+SSLErrorString(int error)
+{
+	switch (error) {
+		case SSL_ERROR_NONE:
+			return "SSL_ERROR_NONE";
+
+		case SSL_ERROR_ZERO_RETURN:
+			return "SSL_ERROR_ZERO_RETURN";
+
+		case SSL_ERROR_WANT_READ:
+			return "SSL_ERROR_WANT_READ";
+
+		case SSL_ERROR_WANT_WRITE:
+			return "SSL_ERROR_WANT_WRITE";
+
+		case SSL_ERROR_SYSCALL:
+			return "SSL_ERROR_SYSCALL";
+
+		case SSL_ERROR_SSL:
+			return "SSL_ERROR_SSL";
+
+		default:
+			return "SSL_ERROR_UNKNOWN";
+	}
+}
+
+
 SSLSocket::SSLSocket(const std::string& options)
 	:
 	fSSLConnection(NULL),
@@ -78,10 +106,8 @@ SSLSocket::Connect(const struct sockaddr *address, socklen_t addrLen)
 	status = SSL_connect(fSSLConnection);
 	if (status != 1) {
 		int sslError = SSL_get_error(fSSLConnection, status);
-		Logger::LogFormat(LOG_ERR, "SSL_connect() failed, error=%d", sslError);
-
-		// TODO: Maybe use SSL_get_error to retrieve the correct error, but
-		// we shouldn't pass it to the upper layers, anyway
+		Logger::LogFormat(LOG_ERR, "SSL_connect() failed: %s", SSLErrorString(sslError));
+		// TODO: Pass the error to the upper layers ?
 		return -1;
 	}
 

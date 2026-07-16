@@ -86,7 +86,10 @@ Socket::SetOption(int level, int name, const void *value, socklen_t len)
 int
 Socket::Connect(const struct sockaddr *address, socklen_t addrLen)
 {
-	return ::connect(fFD, address, addrLen);
+	int result = ::connect(fFD, address, addrLen);
+	if (result != 0)
+		return errno;
+	return result;
 }
 
 
