@@ -95,7 +95,7 @@ SSLSocket::Connect(const struct sockaddr *address, socklen_t addrLen)
 {
 	int status = Socket::Connect(address, addrLen);
 	if (status != 0)
-		return status;
+		return errno;
 
 	fSSLConnection = SSL_new(sSSLContext);
 	if (fSSLConnection == NULL)
