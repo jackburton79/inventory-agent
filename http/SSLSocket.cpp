@@ -77,6 +77,9 @@ SSLSocket::Connect(const struct sockaddr *address, socklen_t addrLen)
 	SSL_set_fd(fSSLConnection, FD());
 	status = SSL_connect(fSSLConnection);
 	if (status != 1) {
+		int sslError = SSL_get_error(fSSLConnection, status);
+		Logger::LogFormat(LOG_ERR, "SSL_connect() failed, error=%d", sslError);
+
 		// TODO: Maybe use SSL_get_error to retrieve the correct error, but
 		// we shouldn't pass it to the upper layers, anyway
 		return -1;
@@ -84,7 +87,7 @@ SSLSocket::Connect(const struct sockaddr *address, socklen_t addrLen)
 
 	// Connection estabilished successfully.
 	if (!fNoSSLCheck && !_CheckCertificate()) {
-		Logger::Log(LOG_DEBUG, "SSLSocket::Connect(): certificate is not valid!");
+		Logger::LogFormat(LOG_DEBUG, "SSLSocket::Connect(): certificate error ");
 		return -1;
 	}
 	return 0;
@@ -188,6 +191,8 @@ SSLSocket::_CheckCertificate()
 	// Verify the certificate chain
 	long verifyResult = SSL_get_verify_result(fSSLConnection);
 	if (verifyResult != X509_V_OK) {
+		Logger::LogFormat(LOG_ERR, "TLS certificate validation failed for host %s: %s",
+			HostName().c_str(), X509_verify_cert_error_string(verifyResult));
 		X509_free(cert);
 		return false;
 	}
