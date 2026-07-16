@@ -138,6 +138,7 @@ SSLSocket::_SSLInit()
 		sSSLContext = SSL_CTX_new(TLS_client_method());
 		if (sSSLContext == NULL)
 			throw std::runtime_error("SSL: can't initialize SSL Library");
+		SSL_CTX_set_default_verify_paths(sSSLContext);
 	}
 }
 
