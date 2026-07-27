@@ -1,6 +1,8 @@
 *.o
 *.d
 *.xml
+.project
+.settings
 ocsinventory-agent
 test/processors-info-test
 test/urltest
