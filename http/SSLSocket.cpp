@@ -123,6 +123,8 @@ SSLSocket::Connect(const struct sockaddr *address, socklen_t addrLen)
 size_t
 SSLSocket::Read(void* data, const size_t& length)
 {
+	// TODO: We don't report any error to the upper layers,
+	// we only report the total read bytes
 	char* ptr = static_cast<char*>(data);
 	size_t totalRead = 0;
 
@@ -143,9 +145,11 @@ SSLSocket::Read(void* data, const size_t& length)
 size_t
 SSLSocket::Write(const void* data, const size_t& length)
 {
+	// TODO: We don't report any error to the upper layers,
+	// we only report the total written bytes
 	const char* ptr = static_cast<const char*>(data);
-
 	size_t totalWritten = 0;
+
 	while (totalWritten < length) {
 		int bytesWritten = SSL_write(fSSLConnection, ptr + totalWritten,
 			static_cast<int>(length - totalWritten));

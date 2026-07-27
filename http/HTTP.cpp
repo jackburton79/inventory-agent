@@ -189,7 +189,7 @@ HTTP::Request(const HTTPRequestHeader& header, const void* data, const size_t da
 			trim(value);
 			fLastResponse.SetValue(replyString.substr(0, pos), value);
 		}
-	} catch (int error) {
+	} catch (const int& error) {
 		fLastError = error;
 		return error;
 	} catch (...) {
@@ -273,8 +273,8 @@ HTTP::_HandleConnection(const std::string& string)
 	tv.tv_usec = 0;
 
 	fSocket->SetOption(SOL_SOCKET, SO_KEEPALIVE, 0, 0);
-	fSocket->SetOption(SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(struct timeval));
-	fSocket->SetOption(SOL_SOCKET, SO_SNDTIMEO, (char*)&tv, sizeof(struct timeval));
+	fSocket->SetOption(SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(struct timeval));
+	fSocket->SetOption(SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(struct timeval));
 
 	int status = fSocket->Connect(fHost.c_str(), fPort);
 	if (status != 0) {
