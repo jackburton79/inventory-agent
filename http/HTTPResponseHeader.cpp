@@ -100,3 +100,35 @@ HTTPResponseHeader::SetData(char* data)
 	fData = data;
 }
 
+
+bool
+HTTPResponseHeader::HasData() const
+{
+	return fDataLength > 0;
+}
+
+
+size_t
+HTTPResponseHeader::DataLength() const
+{
+	return fDataLength;
+}
+
+
+void
+HTTPResponseHeader::SetDataLength(size_t length)
+{
+	fDataLength = length;
+}
+
+
+HTTPResponseHeader&
+HTTPResponseHeader::operator=(const HTTPResponseHeader& header)
+{
+	HTTPHeader::operator=(header);
+
+	fText = header.fText;
+	fCode = header.fCode;
+
+	return *this;
+}

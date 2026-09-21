@@ -30,6 +30,10 @@ public:
 
 	const char* Data() const;
 	void SetData(char* data);
+	bool HasData() const;
+
+	size_t DataLength() const;
+	void SetDataLength(size_t length);
 
 	// Deleted constructor and operator=
 	HTTPResponseHeader(const HTTPResponseHeader& header) = delete;
@@ -41,6 +45,7 @@ private:
 	std::string fText;
 	int fCode;
 	char* fData;
+	size_t fDataLength;
 };
 
 #endif /* HTTPRESPONSEHEADER_H_ */
