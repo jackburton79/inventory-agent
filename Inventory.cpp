@@ -285,13 +285,13 @@ Inventory::Send(const char* serverUrl)
 		else
 			Logger::LogFormat(LOG_ERR, "Sending prolog failed: %s", responseHeader.StatusString().c_str());
 
-		if (!responseHeader.HasContentLength()) {
+		if (!responseHeader.HasData()) {
 			Logger::Log(LOG_ERR, "Prolog sent, but server didn't reply correctly.");
 			return false;
 		}
 
 		std::string contentType = responseHeader.ContentType();
-		size_t contentLength = responseHeader.ContentLength();
+		size_t contentLength = responseHeader.DataLength();
 
 		Logger::LogFormat(LOG_INFO, "Got reply with content type: '%s', content length: %lu",
 			contentType.c_str(), static_cast<unsigned long>(contentLength));
@@ -1196,7 +1196,7 @@ Inventory::_HandleResponse(HTTP& httpObject)
 {
 	const HTTPResponseHeader& responseHeader2 = httpObject.LastResponse();
 	bool statusOk = responseHeader2.StatusCode() == HTTP_OK;
-	if (!responseHeader2.HasContentLength()) {
+	if (!responseHeader2.HasData()) {
 		if (!statusOk) {
 			Logger::Log(LOG_ERR, "Sending inventory failed");
 			return false;
@@ -1207,7 +1207,7 @@ Inventory::_HandleResponse(HTTP& httpObject)
 	Logger::LogFormat(LOG_ERR, "%s", responseHeader2.ToString().c_str());
 
 	if (responseHeader2.ContentType() == "application/xml") {
-		size_t contentLength = responseHeader2.ContentLength();
+		size_t contentLength = responseHeader2.DataLength();
 		const char* resultData = responseHeader2.Data();
 		Logger::Log(LOG_INFO, "Inventory::Send(): Deserialize XML... ");
 		tinyxml2::XMLDocument reply;
