@@ -30,6 +30,10 @@ public:
 
 	const char* Data() const;
 	void SetData(char* data);
+	bool HasData() const;
+
+	size_t DataLength() const;
+	void SetDataLength(size_t length);
 
 	HTTPResponseHeader& operator=(const HTTPResponseHeader& header);
 
@@ -37,6 +41,7 @@ private:
 	std::string fText;
 	int fCode;
 	char* fData;
+	size_t fDataLength;
 };
 
 #endif /* HTTPRESPONSEHEADER_H_ */

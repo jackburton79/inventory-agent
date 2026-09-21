@@ -110,6 +110,27 @@ HTTPResponseHeader::SetData(char* data)
 }
 
 
+bool
+HTTPResponseHeader::HasData() const
+{
+	return fDataLength > 0;
+}
+
+
+size_t
+HTTPResponseHeader::DataLength() const
+{
+	return fDataLength;
+}
+
+
+void
+HTTPResponseHeader::SetDataLength(size_t length)
+{
+	fDataLength = length;
+}
+
+
 HTTPResponseHeader&
 HTTPResponseHeader::operator=(const HTTPResponseHeader& header)
 {

@@ -27,6 +27,7 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include <vector>
 
 HTTP::HTTP()
 	:
@@ -177,8 +178,8 @@ HTTP::Request(const HTTPRequestHeader& header, const void* data, const size_t da
 
 	int code;
 	::sscanf(replyString.c_str(), "HTTP/1.%*d %03d", &code);
+	fLastResponse.Clear();
 	try {
-		fLastResponse.Clear();
 		fLastResponse.SetStatusLine(code, replyString);
 		while (_ReadLineFromSocket(replyString, fSocket)) {
 			size_t pos = replyString.find(":");
@@ -194,17 +195,45 @@ HTTP::Request(const HTTPRequestHeader& header, const void* data, const size_t da
 		return -1;
 	}
 
-	if (fLastResponse.HasContentLength()) {
-		const size_t contentLength = fLastResponse.ContentLength();
-		// Read data
-		char* resultData = new char[contentLength];
+	bool chunked = false;
+	if (fLastResponse.HasKey("transfer-encoding")) {
+		std::string encoding =
+			fLastResponse.Value("transfer-encoding");
+
+		trim(encoding);
+		if (encoding.find("chunked") != std::string::npos)
+			chunked = true;
+	}
+
+	if (chunked) {
+		std::string body;
+		int status = _ReadChunkedData(fSocket, body);
+		if (status != 0) {
+			fLastError = status;
+			return status;
+		}
+
+		char* resultData = new char[body.size() + 1];
+		memcpy(resultData, body.data(), body.size());
+		resultData[body.size()] = '\0';
+
+		fLastResponse.SetData(resultData);
+		fLastResponse.SetDataLength(body.size());
+	} else if (fLastResponse.HasContentLength()) {
+		const size_t contentLength =
+			fLastResponse.ContentLength();
+
+		char* resultData = new char[contentLength + 1];
 		int read = Read(resultData, contentLength);
 		if (read != (int)contentLength) {
 			fLastError = read;
 			delete[] resultData;
 			return fLastError;
 		}
+
+		resultData[contentLength] = '\0';
 		fLastResponse.SetData(resultData);
+		fLastResponse.SetDataLength(contentLength);
 	}
 	return 0;
 }
@@ -305,4 +334,53 @@ HTTP::_ReadLineFromSocket(std::string& string, Socket* socket)
 		return false;
 
 	return true;
+}
+
+int
+HTTP::_ReadChunkedData(Socket* socket, std::string& data)
+{
+	data.clear();
+
+	while (true) {
+		std::string line;
+		_ReadLineFromSocket(line, socket);
+
+		const size_t semicolon = line.find(';');
+		if (semicolon != std::string::npos)
+			line.resize(semicolon);
+
+		unsigned int chunkSize = 0;
+		if (::sscanf(line.c_str(), "%x", &chunkSize) != 1)
+			return EPROTO;
+
+		if (chunkSize == 0) {
+			// eventuali trailer header
+			while (_ReadLineFromSocket(line, socket))
+				;
+
+			return 0;
+		}
+
+		std::vector<char> buffer(chunkSize);
+		size_t totalRead = 0;
+		while (totalRead < chunkSize) {
+			int bytesRead = socket->Read(
+				&buffer[totalRead],
+				chunkSize - totalRead);
+
+			if (bytesRead <= 0)
+				return errno;
+
+			totalRead += bytesRead;
+		}
+
+		data.append(buffer.data(), chunkSize);
+
+		char crlf[2];
+		if (socket->Read(crlf, 2) != 2)
+			return errno;
+
+		if (crlf[0] != '\r' || crlf[1] != '\n')
+			return EPROTO;
+	}
 }
