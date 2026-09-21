@@ -121,14 +121,3 @@ HTTPResponseHeader::SetDataLength(size_t length)
 	fDataLength = length;
 }
 
-
-HTTPResponseHeader&
-HTTPResponseHeader::operator=(const HTTPResponseHeader& header)
-{
-	HTTPHeader::operator=(header);
-
-	fText = header.fText;
-	fCode = header.fCode;
-
-	return *this;
-}
