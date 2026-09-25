@@ -211,8 +211,9 @@ HandleArgs(int argc, char **argv)
 static void
 SignalHandler(int signal)
 {
+	// Only async-signal-safe calls are allowed here
 	if (sAgentService != nullptr)
-		sAgentService->Stop();
+		sAgentService->RequestStop();
 }
 
 

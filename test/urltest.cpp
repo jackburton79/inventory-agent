@@ -34,7 +34,14 @@ const struct test_entry kTestEntries[] = {
     { "http://malformed_url.com///path", false, "http", "malformed_url.com", 80,
         "/path", "", "" },
     { "http://malformed_url_with_port.com:8080///path", false, "http",
-        "malformed_url_with_port.com", 8080, "/path", "", "" }
+        "malformed_url_with_port.com", 8080, "/path", "", "" },
+    { "https://glpi.cloud.com/", false, "https", "glpi.cloud.com", 443,
+        "/", "", "" },
+    { "https://localhost:4433/", false, "https", "localhost", 4433,
+        "/", "", "" },
+    { "http://server:81///", false, "http", "server", 81, "/", "", "" },
+    { "http://user:pass@server//", false, "http", "server", 80, "/",
+        "user", "pass" }
 };
 
 

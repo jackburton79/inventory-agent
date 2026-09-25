@@ -27,6 +27,7 @@ public:
 
 private:
 	void _SSLInit();
+	bool _SetupVerification();
 	bool _CheckCertificate();
 
 	SSL* fSSLConnection;
