@@ -212,14 +212,15 @@ std::string
 Configuration::KeyValue(const char* key) const
 {
 	std::lock_guard<std::mutex> lock(fLock);
+	// Volatile values (set from the command line) take precedence
+	// over the ones read from the configuration file
 	std::map<std::string, std::string>::const_iterator i;
-	i = fValues.find(key);
-	if (i != fValues.end())
-		return i->second;
-
-	// Try volatile values
 	i = fVolatileValues.find(key);
 	if (i != fVolatileValues.end())
+		return i->second;
+
+	i = fValues.find(key);
+	if (i != fValues.end())
 		return i->second;
 
 	return "";

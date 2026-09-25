@@ -94,6 +94,9 @@ int main()
 	std::cout << "Volatile values" << std::endl;
 	config->SetVolatileKeyValue("volatilekey", "volatilevalue");
 	Check(config->KeyValue("volatilekey") == "volatilevalue", "volatile value");
+	config->SetVolatileKeyValue("TAG", "cli-tag");
+	Check(config->KeyValue("TAG") == "cli-tag",
+		"command line values should take precedence: " + config->KeyValue("TAG"));
 	config->SetServer("http://cli.example.com/ocs");
 	Check(config->ServerURL() == "http://cli.example.com/ocs",
 		"the command line server should take precedence: " + config->ServerURL());
@@ -110,7 +113,8 @@ int main()
 		"volatile values must not be saved");
 	Check(saved.find("deviceID=device-2017-01-01-00-00-00\n") != std::string::npos,
 		"device ID not saved");
-	Check(saved.find("TAG=office\n") != std::string::npos, "TAG not saved");
+	Check(saved.find("TAG=office\n") != std::string::npos,
+		"TAG from the file not saved (or overwritten by the command line one)");
 
 	std::cout << "File permissions" << std::endl;
 	::umask(022);
