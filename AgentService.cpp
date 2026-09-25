@@ -29,8 +29,9 @@ Daemonize()
 		::exit(0);
 
 	::umask(0);
-	if (::chdir("/") < 0)
+	if (::chdir("/") < 0) {
 		; // Ignore
+	}
 
 	//set new session
 	pid_t sid = ::setsid();
