@@ -45,6 +45,16 @@ Ensure the following components are installed:
 
 The project includes ![TinyXML2](https://github.com/leethomason/tinyxml2) and ![CivetWeb](https://github.com/civetweb/civetweb) as an embedded dependency.
 
+### Build
+
+    make                            # build the agent and the test programs
+    make check                      # run the unit tests
+    make install                    # install to /usr/local/bin
+    make install PREFIX=/usr DESTDIR=/tmp/pkg   # staged install, e.g. for packaging
+
+Use `make DEBUG=1` for a debug build and `make V=1` to see the full compiler command lines.
+The usual `CC`, `CXX`, `CFLAGS`, `CXXFLAGS`, `CPPFLAGS`, `LDFLAGS` and `LDLIBS` variables are honored.
+
 
 Usage
 ===
