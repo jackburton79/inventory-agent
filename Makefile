@@ -14,6 +14,8 @@
 #   INSTALL_STRIP=  install without stripping the symbols (default: -s)
 #   DEBUG=1   build without optimizations, with debug info and -DDEBUG=1
 #             (run "make clean" when switching between debug and release)
+#   WEBSERVER=0  build without the web server of the daemon mode
+#             (run "make clean" when switching)
 #   V=1       show the full compiler command lines
 
 PROGRAM := ocsinventory-agent
@@ -50,6 +52,8 @@ override CFLAGS += $(SECTION_FLAGS)
 override CXXFLAGS += $(SECTION_FLAGS)
 override LDFLAGS += -Wl,--gc-sections
 
+WEBSERVER ?= 1
+
 # Project sources
 AGENT_SRCS := $(filter-out main.cpp,$(wildcard *.cpp)) \
 	$(wildcard backends/*.cpp) \
@@ -59,6 +63,12 @@ AGENT_SRCS := $(filter-out main.cpp,$(wildcard *.cpp)) \
 EDID_SRCS := edid-decode.c
 TINYXML2_SRCS := libs/tinyxml2/tinyxml2.cpp
 CIVETWEB_SRCS := libs/civetweb-1.16/src/civetweb.c
+
+ifeq ($(WEBSERVER),0)
+AGENT_SRCS := $(filter-out WebServer.cpp,$(AGENT_SRCS))
+CIVETWEB_SRCS :=
+override CPPFLAGS += -DNO_WEBSERVER
+endif
 
 CIVETWEB_FLAGS := -Ilibs/civetweb-1.16/src \
 	-DUSE_SSL \

@@ -12,7 +12,9 @@
 #include "Agent.h"
 #include "Configuration.h"
 #include "Logger.h"
+#ifndef NO_WEBSERVER
 #include "WebServer.h"
+#endif
 
 static void
 Daemonize()
@@ -71,10 +73,7 @@ AgentService::AgentService()
 
 AgentService::~AgentService()
 {
-	if (fServer != nullptr) {
-		fServer->Stop();
-		delete fServer;
-	}
+	_StopWebServer();
 	delete fAgent;
 }
 
@@ -83,8 +82,6 @@ void
 AgentService::Run()
 {
 	Daemonize();
-
-	fServer = new WebServer(*this);
 
 	fRunning = true;
 
@@ -99,12 +96,7 @@ AgentService::Run()
 	fSchedulerThread =
 		std::thread(&AgentService::_SchedulingLoop, this);
 
-	int port = _WebServerPort();
-	if (port > 0) {
-		if (!fServer->Start(port, ""))
-			Logger::LogFormat(LOG_ERR, "AgentService: cannot start the web server on port %d", port);
-	} else
-		Logger::Log(LOG_INFO, "AgentService: web server disabled");
+	_StartWebServer();
 
 	while (fRunning)
 		sleep(1);
@@ -119,10 +111,7 @@ AgentService::Run()
 	if (fSchedulerThread.joinable())
 		fSchedulerThread.join();
 
-	fServer->Stop();
-
-	delete fServer;
-	fServer = nullptr;
+	_StopWebServer();
 }
 
 
@@ -373,6 +362,38 @@ AgentService::_WaitTime()
 
 	Logger::LogFormat(LOG_ERR, "AgentService: invalid wait time '%s', ignored", waitString.c_str());
 	return 0;
+}
+
+
+void
+AgentService::_StartWebServer()
+{
+#ifdef NO_WEBSERVER
+	Logger::Log(LOG_INFO, "AgentService: built without web server");
+#else
+	int port = _WebServerPort();
+	if (port == 0) {
+		Logger::Log(LOG_INFO, "AgentService: web server disabled");
+		return;
+	}
+
+	fServer = new WebServer(*this);
+	if (!fServer->Start(port, ""))
+		Logger::LogFormat(LOG_ERR, "AgentService: cannot start the web server on port %d", port);
+#endif
+}
+
+
+void
+AgentService::_StopWebServer()
+{
+#ifndef NO_WEBSERVER
+	if (fServer != nullptr) {
+		fServer->Stop();
+		delete fServer;
+		fServer = nullptr;
+	}
+#endif
 }
 
 

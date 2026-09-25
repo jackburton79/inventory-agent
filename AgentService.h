@@ -50,6 +50,8 @@ private:
 	void _SchedulingLoop();
 	bool _ShouldRunScheduledInventory();
 	static std::chrono::seconds _ScheduleInterval();
+	void _StartWebServer();
+	void _StopWebServer();
 	static int _WebServerPort();
 	static int _WaitTime();
 
