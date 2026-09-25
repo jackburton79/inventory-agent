@@ -41,7 +41,39 @@ const struct test_entry kTestEntries[] = {
         "/", "", "" },
     { "http://server:81///", false, "http", "server", 81, "/", "", "" },
     { "http://user:pass@server//", false, "http", "server", 80, "/",
-        "user", "pass" }
+        "user", "pass" },
+    // IPv6 addresses
+    { "http://[::1]:8080/ocs", false, "http", "::1", 8080, "/ocs", "", "" },
+    { "https://[2001:db8::10]/ocsinventory", false, "https", "2001:db8::10",
+        443, "/ocsinventory", "", "" },
+    { "https://user:pass@[fe80::1]:8443/", false, "https", "fe80::1", 8443,
+        "/", "user", "pass" },
+    { "http://[::1]", false, "http", "::1", 80, "", "", "" },
+    // User without password, '@' and ':' outside of the authority
+    { "http://user@server:81/path", false, "http", "server", 81, "/path",
+        "user", "" },
+    { "http://server/path/with@at:colon", false, "http", "server", 80,
+        "/path/with@at:colon", "", "" },
+    { "https://user:p@ss@server/", false, "https", "server", 443, "/",
+        "user", "p@ss" }
+};
+
+
+struct host_header_entry {
+    const char* url;
+    const char* hostHeader;
+};
+
+
+const struct host_header_entry kHostHeaderEntries[] = {
+    { "http://www.test.com/test", "www.test.com" },
+    { "http://www.test.com:80/test", "www.test.com" },
+    { "http://www.test.com:8080/test", "www.test.com:8080" },
+    { "https://www.test.com:443/", "www.test.com" },
+    { "https://www.test.com:80/", "www.test.com:80" },
+    { "http://[::1]/ocs", "[::1]" },
+    { "http://[::1]:8080/ocs", "[::1]:8080" },
+    { "/relative/path", "" }
 };
 
 
@@ -88,6 +120,17 @@ int main()
             || url.Path().compare(kTestEntries[i].path)
             || url.Username().compare(kTestEntries[i].user)
             || url.Password().compare(kTestEntries[i].pass)) {
+            fail = true;
+            std::cout << "Test Failed !!!" << std::endl;
+        }
+    }
+
+    for (size_t i = 0; i < sizeof(kHostHeaderEntries) / sizeof(kHostHeaderEntries[0]); i++) {
+        url.SetTo(kHostHeaderEntries[i].url);
+        std::cout << "url: " << url.URLString() << std::endl;
+        std::cout << "\t" << "host header: " << url.HostHeader();
+        std::cout << " (should be: \"" << kHostHeaderEntries[i].hostHeader << "\")" << std::endl;
+        if (url.HostHeader().compare(kHostHeaderEntries[i].hostHeader)) {
             fail = true;
             std::cout << "Test Failed !!!" << std::endl;
         }

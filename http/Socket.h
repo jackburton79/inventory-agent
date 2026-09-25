@@ -10,6 +10,7 @@
 
 #include <netinet/in.h>
 #include <string>
+#include <vector>
 
 class Socket {
 public:
@@ -24,17 +25,33 @@ public:
 	bool IsOpened() const;
 
 	virtual int Connect(const struct sockaddr *address, socklen_t addrLen);
-	int Connect(const struct hostent* hostEnt, const int port);
+	// Resolves hostName (IPv4 and IPv6) and tries all its addresses
+	// in turn, (re)opening the socket with the right address family.
+	// Returns 0 on success, an errno value on failure.
 	int Connect(const char *hostName, const int port);
 
+	// The options are remembered and applied again when the socket
+	// is reopened by Connect(), so they can be set before connecting.
 	void SetOption(int level, int name, const void *value, socklen_t len);
 
 	virtual size_t Read(void* data, const size_t& length);
 	virtual size_t Write(const void* data, const size_t& length);
 
 private:
+	struct SocketOption {
+		int level;
+		int name;
+		std::vector<char> value;
+	};
+
+	int _OpenFD(int domain);
+	void _CloseFD();
+
 	int fFD;
+	int fType;
+	int fProtocol;
 	std::string fHostName;
+	std::vector<SocketOption> fOptions;
 };
 
 #endif // SOCKET_H

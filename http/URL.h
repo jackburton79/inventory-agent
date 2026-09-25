@@ -27,6 +27,10 @@ public:
 
 	bool IsRelative() const;
 
+	int DefaultPort() const;
+	// Value for the HTTP Host header: host[:port], [address][:port] for IPv6
+	std::string HostHeader() const;
+
 private:
 	void _DecodeURLString(const std::string& string);
 	static std::string _NormalizedPath(const std::string& string, size_t slashPos);
