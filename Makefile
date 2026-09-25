@@ -4,13 +4,14 @@
 #   all (default)  build the agent and the test programs
 #   agent          build only the agent
 #   check          build and run the unit tests
-#   install        install the agent in $(DESTDIR)$(BINDIR)
+#   install        install the agent in $(DESTDIR)$(BINDIR), stripped
 #   uninstall      remove the installed agent
 #   clean          remove all build products
 #
 # Variables:
 #   CC, CXX, CFLAGS, CXXFLAGS, CPPFLAGS, LDFLAGS, LDLIBS  usual meaning
 #   PREFIX (/usr/local), BINDIR ($(PREFIX)/bin), DESTDIR   install paths
+#   INSTALL_STRIP=  install without stripping the symbols (default: -s)
 #   DEBUG=1   build without optimizations, with debug info and -DDEBUG=1
 #             (run "make clean" when switching between debug and release)
 #   V=1       show the full compiler command lines
@@ -21,13 +22,15 @@ TESTS := test/urltest test/zlibtest test/httptest test/configtest test/edidtest 
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 INSTALL ?= install
+INSTALL_STRIP ?= -s
 
 BUILDDIR := build
 
 ifeq ($(DEBUG),1)
 OPTFLAGS := -O0 -g -DDEBUG=1
 else
-OPTFLAGS := -O2
+# Optimize for size: the agent is not performance critical
+OPTFLAGS := -Os
 endif
 
 CFLAGS ?= $(OPTFLAGS)
@@ -39,6 +42,13 @@ PROJECT_WARNINGS := $(WARNINGS) -Wextra -Wno-unused-parameter
 override CPPFLAGS += -I. -Ilibs -Ilibs/civetweb-1.16/include
 override CXXFLAGS += -std=c++17
 LDLIBS += -lz -lssl -lcrypto -ldl -lpthread
+
+# Put every function and variable in its own section, so that the
+# linker can discard the unused ones
+SECTION_FLAGS := -ffunction-sections -fdata-sections
+override CFLAGS += $(SECTION_FLAGS)
+override CXXFLAGS += $(SECTION_FLAGS)
+override LDFLAGS += -Wl,--gc-sections
 
 # Project sources
 AGENT_SRCS := $(filter-out main.cpp,$(wildcard *.cpp)) \
@@ -101,7 +111,7 @@ check: test/urltest test/zlibtest test/httptest test/configtest test/edidtest
 
 install: $(PROGRAM)
 	$(INSTALL) -d $(DESTDIR)$(BINDIR)
-	$(INSTALL) -m 755 $(PROGRAM) $(DESTDIR)$(BINDIR)/$(PROGRAM)
+	$(INSTALL) $(INSTALL_STRIP) -m 755 $(PROGRAM) $(DESTDIR)$(BINDIR)/$(PROGRAM)
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/$(PROGRAM)
