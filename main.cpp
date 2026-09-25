@@ -75,6 +75,7 @@ PrintHelpAndExit()
 	std::cout << std::endl;
 	std::cout << "  -d, --daemon                       Runs continuously in background" << std::endl;
 	std::cout << "  -w, --wait <s>                     Wait for the specified amount of seconds before building the inventory" << std::endl;
+	std::cout << "                                     (not in daemon mode, where the first inventory runs after one minute)" << std::endl;
 	std::cout << std::endl;
 	std::cout << "      --no-ssl-check                 Don't check server ssl certificate" << std::endl;
 	std::cout << "      --logger <backend>             Specify error log backend (STDERR / SYSLOG)." << std::endl;

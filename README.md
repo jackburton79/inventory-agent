@@ -56,8 +56,8 @@ Use `make DEBUG=1` for a debug build and `make V=1` to see the full compiler com
 The usual `CC`, `CXX`, `CFLAGS`, `CXXFLAGS`, `CPPFLAGS`, `LDFLAGS` and `LDLIBS` variables are honored.
 
 
-Usage
-===
+## Usage
+
     -h, --help                         Print usage
     -c, --conf <config_file>           Specify configuration file
     -s, --server <server>              Specify OCSInventory/GLPI server url
@@ -67,39 +67,103 @@ Usage
         --stdout                       Print inventory to stdout
 
     -t, --tag <TAG>                    Specify tag. Will be ignored by server if a value already exists
-        --nosoftware                   Do not retrieve installed software
+        --no-software                  Do not retrieve installed software (--nosoftware is still accepted)
+        --no-assettag                  Do not include asset tag in inventory
 
         --agent-string <string>        Specify custom HTTP agent string
 
-    -d, --daemon                       Runs in background as a service instead of exiting immediately
+    -d, --daemon                       Runs continuously in background
     -w, --wait <s>                     Wait for the specified amount of seconds before building the inventory
+                                       (not in daemon mode, where the first inventory runs after one minute)
 
-    --logger <backend>                 Specify error log backend (STDERR / SYSLOG).
-                                       Default is standard error if attached to a terminal, otherwise syslog. 
+        --no-ssl-check                 Don't check server ssl certificate
+        --logger <backend>             Specify error log backend (STDERR / SYSLOG).
+                                       Default is standard error if attached to a terminal, otherwise syslog.
     -v, --verbose                      Verbose mode
         --version                      Print version and exit
 
         --use-current-time-in-device-ID  Use current time in the device ID, instead of the BIOS Date.
                                          No need to use this option unless you know why you need it.
 
-    The -l and -s option are mutually exclusive.
-    If no server or output file is specified, either via the -s/-l option or via configuration file (option -c), the program will exit without doing anything.
+The -l and -s options are mutually exclusive.
+If no server or output file is specified, either via the -s/-l option or via configuration file (option -c),
+the program will exit without doing anything.
 
-    Examples:
-      Print inventory to standard output :
-        ocsinventory-agent --stdout
+In one-shot mode the program exits with status 1 if the inventory could not be sent or saved.
 
-      Send inventory to server http://ocsinventory-ng/ocsinventory :
-        ocsinventory-agent --server http://ocsinventory-ng/ocsinventory
+### Examples
 
-      Use the configuration file /etc/ocsinventory-ng.conf :
-        ocsinventory-agent --conf /etc/ocsinventory-ng.conf
+Print inventory to standard output:
 
-      Send inventory to server https://ocsinventory-ng/ocsinventory which requires http basic authentication :
-        ocsinventory-agent --server https://user:password@ocsinventory-ng/ocsinventory
+    ocsinventory-agent --stdout
 
-      Save a local inventory to /var/tmp/inventoryFile.xml :
-        ocsinventory-agent --local /var/tmp/inventoryFile.xml
+Send inventory to server http://ocsinventory-ng/ocsinventory:
 
-      Save a local inventory to /var/tmp/<device_id>.xml :
-        ocsinventory-agent --local /var/tmp/
+    ocsinventory-agent --server http://ocsinventory-ng/ocsinventory
+
+Use the configuration file /etc/ocsinventory-ng.conf:
+
+    ocsinventory-agent --conf /etc/ocsinventory-ng.conf
+
+Send inventory to server https://ocsinventory-ng/ocsinventory which requires http basic authentication:
+
+    ocsinventory-agent --server https://user:password@ocsinventory-ng/ocsinventory
+
+Save a local inventory to /var/tmp/inventoryFile.xml:
+
+    ocsinventory-agent --local /var/tmp/inventoryFile.xml
+
+Save a local inventory to /var/tmp/<device_id>.xml:
+
+    ocsinventory-agent --local /var/tmp/
+
+## Configuration file
+
+The configuration file passed with `-c` contains one `key=value` pair per line.
+Spaces around keys and values are ignored, as are empty lines and lines starting with `#` or `;`.
+Options given on the command line take precedence over the configuration file.
+
+The agent writes the generated device ID (`deviceID`) back to the configuration file,
+creating it if needed (with mode 0600, since it may contain credentials).
+Comments and the order of the existing lines are preserved.
+The server given with `-s` is never written to the file.
+
+| Key | Description |
+|-----|-------------|
+| `server` | Server URL, as for `-s` |
+| `format` | `FORMAT_OCS` or `FORMAT_GLPI`, as for `--format` |
+| `TAG` | Tag, as for `-t` |
+| `no-software` | `true` to skip the installed software, as for `--no-software` |
+| `no-assettag` | `true` to skip the asset tag, as for `--no-assettag` |
+| `agent-string` | Custom HTTP agent string, as for `--agent-string` |
+| `no_ssl_check` | `true` to skip the server certificate verification, as for `--no-ssl-check` |
+| `schedule_interval` | Daemon mode: seconds between two inventories (default 86400, one day; minimum 60) |
+| `httpd-port` | Daemon mode: port of the web server (default 62354); `0` disables it |
+| `httpd-trust` | Daemon mode: addresses allowed to force an inventory, separated by commas or spaces |
+
+Example:
+
+    # Inventory server
+    server = https://ocs.example.com/ocsinventory
+    TAG = office
+
+    # Daemon mode
+    schedule_interval = 43200
+    httpd-trust = 10.0.0.10, 10.0.0.11
+
+## Daemon mode
+
+With `-d` the agent runs in background: the first inventory is sent one minute after startup,
+then every `schedule_interval` seconds. A systemd unit is available in `contrib/`.
+
+The agent also runs a small web server (port 62354 by default, see `httpd-port`):
+
+| URL | Description |
+|-----|-------------|
+| `/` | Status page |
+| `/status` | Agent status, as plain text |
+| `/info` | Version, status and time of the last inventory, as JSON |
+| `/now` | Schedule an inventory immediately (at most one request per minute) |
+
+`/now`, and the corresponding link on the status page, are only available from trusted addresses:
+the local host, the addresses listed in `httpd-trust` and the addresses of the configured server.
