@@ -150,7 +150,7 @@ void
 AgentService::Stop()
 {
 	{
-		std::lock_guard lock(fMutex);
+		std::lock_guard<std::mutex> lock(fMutex);
 		fRunning = false;
 	}
 
@@ -161,7 +161,9 @@ AgentService::Stop()
 void
 AgentService::RequestStop()
 {
-	static_assert(std::atomic_bool::is_always_lock_free,
+	// ATOMIC_BOOL_LOCK_FREE == 2: always lock free (C++11, unlike
+	// std::atomic_bool::is_always_lock_free which is C++17)
+	static_assert(ATOMIC_BOOL_LOCK_FREE == 2,
 		"std::atomic_bool must be lock free to be used in a signal handler");
 	fRunning = false;
 }
@@ -216,7 +218,7 @@ AgentService::LastInventoryTime() const
 {
 	std::chrono::system_clock::time_point lastInventoryEnd;
 	{
-		std::lock_guard lock(fMutex);
+		std::lock_guard<std::mutex> lock(fMutex);
 		lastInventoryEnd = fLastInventoryEnd;
 	}
 	return FormatTime(lastInventoryEnd);
@@ -228,7 +230,7 @@ AgentService::LastInventoryRequestedTime() const
 {
 	std::chrono::system_clock::time_point lastInventoryRequest;
 	{
-		std::lock_guard lock(fMutex);
+		std::lock_guard<std::mutex> lock(fMutex);
 		lastInventoryRequest = fLastInventoryRequest;
 	}
 	return FormatTime(lastInventoryRequest);
@@ -238,7 +240,7 @@ AgentService::LastInventoryRequestedTime() const
 AgentStatus
 AgentService::ScheduleInventory()
 {
-	std::lock_guard lock(fMutex);
+	std::lock_guard<std::mutex> lock(fMutex);
 
 	auto now = std::chrono::system_clock::now();
 	if (now - fLastInventoryRequest < std::chrono::minutes(1)) {
@@ -278,7 +280,7 @@ void
 AgentService::_InventoryLoop()
 {
 	while (fRunning) {
-		std::unique_lock lock(fMutex);
+		std::unique_lock<std::mutex> lock(fMutex);
 
 		fCondition.wait(lock,
 			[this]
@@ -301,7 +303,7 @@ AgentService::_InventoryLoop()
 			// TODO: What if we don't have a server url ?
 			// Only successful inventories are reported as "last inventory"
 			if (fAgent->SendToServer(Configuration::Get()->ServerURL())) {
-				std::lock_guard endLock(fMutex);
+				std::lock_guard<std::mutex> endLock(fMutex);
 				fLastInventoryEnd = std::chrono::system_clock::now();
 			}
 		} catch (std::exception& ex) {
