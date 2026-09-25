@@ -87,15 +87,16 @@ AgentService::Run()
 
 	fRunning = true;
 
+	// Schedule the first inventory in one minute from now so it runs when the system is completely up
+	// (X takes some time on our old machines)
+	// TODO: make it configurable
+	// Must be set before starting the scheduler thread, which owns it afterwards
+	fNextScheduledInventory = std::chrono::steady_clock::now() + std::chrono::minutes(1);
+
 	fInventoryThread =
 		std::thread(&AgentService::_InventoryLoop, this);
 	fSchedulerThread =
 		std::thread(&AgentService::_SchedulingLoop, this);
-
-	// Schedule the first inventory in one minute from now so it runs when the system is completely up
-	// (X takes some time on our old machines)
-	// TODO: make it configurable
-	fNextScheduledInventory = std::chrono::steady_clock::now() + std::chrono::minutes(1);
 
 #if 1
 	// TODO: add configuration
@@ -322,7 +323,6 @@ AgentService::_SchedulingLoop()
 		if (_ShouldRunScheduledInventory()) {
 			Logger::Log(LOG_DEBUG, "AgentService: scheduled inventory trigger");
 			ScheduleInventory();
-			fLastScheduledInventoryRun = std::chrono::steady_clock::now();
 		}
 
 		std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -335,28 +335,37 @@ AgentService::_SchedulingLoop()
 bool
 AgentService::_ShouldRunScheduledInventory()
 {
-	bool shouldRun  = false;
 	auto now = std::chrono::steady_clock::now();
-	if (now >= fNextScheduledInventory && fLastScheduledInventoryRun < fNextScheduledInventory) {
-		shouldRun = true;
+	if (now < fNextScheduledInventory)
+		return false;
+
+	fNextScheduledInventory = now + _ScheduleInterval();
+	return true;
+}
+
+
+/* static */
+std::chrono::seconds
+AgentService::_ScheduleInterval()
+{
+	// Same as the default PROLOG_FREQ of OCS Inventory NG
+	const std::chrono::seconds kDefaultInterval = std::chrono::hours(24);
+
+	// Interval between two scheduled inventories, in seconds (e.g. 3600).
+	// Note that ScheduleInventory() doesn't accept more than one
+	// request per minute, so shorter intervals are not effective.
+	std::string intervalString = Configuration::Get()->KeyValue("schedule_interval");
+	if (intervalString.empty())
+		return kDefaultInterval;
+
+	try {
+		int intervalSeconds = std::stoi(intervalString);
+		if (intervalSeconds > 0)
+			return std::chrono::seconds(intervalSeconds);
+	} catch (...) {
 	}
 
-	const Configuration* config = Configuration::Get();
-	// Check interval-based scheduling (e.g., every 3600 seconds)
-	std::string intervalStr = config->KeyValue("schedule_interval");
-	if (!intervalStr.empty()) {
-		try {
-			int intervalSeconds = std::stoi(intervalStr);
-			if (intervalSeconds > 0) {
-				if (shouldRun) {
-					fNextScheduledInventory = now +
-						std::chrono::seconds(intervalSeconds);
-				}
-			}
-		} catch (...) {
-			Logger::Log(LOG_ERR, "AgentService: invalid schedule-interval value");
-		}
-	}
-
-	return shouldRun;
+	Logger::LogFormat(LOG_ERR, "AgentService: invalid schedule_interval value '%s', using %ld seconds",
+		intervalString.c_str(), static_cast<long>(kDefaultInterval.count()));
+	return kDefaultInterval;
 }
