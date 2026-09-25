@@ -12,6 +12,18 @@ jobs:
     - name: make check
       run: make check
 
+  no-webserver:
+    # Build without the web server (WEBSERVER=0)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - name: make all
+      run: make -j$(nproc) all WEBSERVER=0
+    - name: make check
+      run: make check WEBSERVER=0
+    - name: check that the web server is not linked
+      run: "! nm -C ocsinventory-agent | grep -qE 'mg_start|WebServer::'"
+
   sanitizers:
     # Build with AddressSanitizer (including LeakSanitizer) and
     # UndefinedBehaviorSanitizer, and fail on the first error

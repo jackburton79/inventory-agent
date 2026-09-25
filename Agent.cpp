@@ -19,8 +19,6 @@
 #include "backends/OSInfoBackend.h"
 #include "backends/UnameBackend.h"
 
-#include "WebServer.h"
-
 #include <chrono>
 #include <cstdlib>
 #include <iostream>

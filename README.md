@@ -55,6 +55,8 @@ The project includes ![TinyXML2](https://github.com/leethomason/tinyxml2) and ![
 
 The agent is optimized for size (`-Os`, with unused code removed at link time).
 Use `make DEBUG=1` for a debug build and `make V=1` to see the full compiler command lines.
+Use `make WEBSERVER=0` to build without the web server of the daemon mode (and without CivetWeb),
+which gives a smaller binary. Run `make clean` when changing `DEBUG` or `WEBSERVER`.
 The usual `CC`, `CXX`, `CFLAGS`, `CXXFLAGS`, `CPPFLAGS`, `LDFLAGS` and `LDLIBS` variables are honored.
 
 
@@ -158,7 +160,8 @@ Example:
 With `-d` the agent runs in background: the first inventory is sent one minute after startup,
 then every `schedule_interval` seconds. A systemd unit is available in `contrib/`.
 
-The agent also runs a small web server (port 62354 by default, see `httpd-port`):
+Unless built with `WEBSERVER=0`, the agent also runs a small web server
+(port 62354 by default, see `httpd-port`):
 
 | URL | Description |
 |-----|-------------|
