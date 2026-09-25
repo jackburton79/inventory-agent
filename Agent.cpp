@@ -85,10 +85,10 @@ Agent::PrintToStream()
 }
 
 
-void
+bool
 Agent::SaveToFile(const std::string& filePathName)
 {
-	fInventory->Save(filePathName.c_str());
+	return fInventory->Save(filePathName.c_str());
 }
 
 

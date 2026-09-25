@@ -123,22 +123,25 @@ AgentService::Run()
 }
 
 
-void
+bool
 AgentService::RunOneShot()
 {
 	const Configuration* config = Configuration::Get();
 	bool noSoftware = (config->KeyValue(CONF_NO_SOFTWARE) == CONF_VALUE_TRUE);
 	fAgent->RunInventory(noSoftware);
-	if (config->KeyValue(CONF_OUTPUT_STDOUT) == CONF_VALUE_TRUE)
+	if (config->KeyValue(CONF_OUTPUT_STDOUT) == CONF_VALUE_TRUE) {
 		fAgent->PrintToStream();
-	else if (config->LocalInventory()) {
+		return true;
+	}
+
+	if (config->LocalInventory()) {
 		std::string fullFileName = config->OutputFileName();
 		if (fullFileName[fullFileName.length() - 1] == '/')
 			fullFileName.append(config->DeviceID()).append(".xml");
-		fAgent->SaveToFile(fullFileName);
-	} else {
-		fAgent->SendToServer(config->ServerURL());
+		return fAgent->SaveToFile(fullFileName);
 	}
+
+	return fAgent->SendToServer(config->ServerURL());
 }
 
 
@@ -283,8 +286,9 @@ AgentService::_InventoryLoop()
 			bool noSoftware = (Configuration::Get()->KeyValue(CONF_NO_SOFTWARE) == CONF_VALUE_TRUE);
 			fAgent->RunInventory(noSoftware);
 			// TODO: What if we don't have a server url ?
-			fAgent->SendToServer(Configuration::Get()->ServerURL());
-			fLastInventoryEnd = std::chrono::system_clock::now();
+			// Only successful inventories are reported as "last inventory"
+			if (fAgent->SendToServer(Configuration::Get()->ServerURL()))
+				fLastInventoryEnd = std::chrono::system_clock::now();
 		} catch (std::exception& ex) {
 			Logger::Log(LOG_ERR, ex.what());
 

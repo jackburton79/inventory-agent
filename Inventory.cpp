@@ -382,7 +382,7 @@ Inventory::Send(const char* serverUrl)
 	else
 		Logger::Log(LOG_ERR, "Inventory::Send(): Inventory was rejected by server!");
 
-	return true;
+	return statusOk;
 }
 
 

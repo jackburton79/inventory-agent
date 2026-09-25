@@ -23,7 +23,8 @@ public:
 	~AgentService();
 
 	void Run();
-	void RunOneShot();
+	// Returns false if the inventory could not be saved or sent
+	bool RunOneShot();
 
 	void Stop();
 	// Async-signal-safe: only flags the service for termination
