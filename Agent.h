@@ -38,7 +38,6 @@ private:
 	void _SendInventory();
 
 	Inventory* fInventory;
-	static std::string sAgentString;
 };
 
 #endif /* AGENT_H_ */

@@ -56,7 +56,9 @@ private:
 	std::thread fInventoryThread;
 	std::thread fSchedulerThread;
 	std::condition_variable fCondition;
-	std::mutex fMutex;
+	// Protects fInventoryRequested/fRunning transitions
+	// and the fLastInventory* time points
+	mutable std::mutex fMutex;
 
 	std::chrono::system_clock::time_point fLastInventoryRequest;
 	std::chrono::system_clock::time_point fLastInventoryStart;

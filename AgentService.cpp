@@ -196,29 +196,41 @@ AgentService::StatusString() const
 }
 
 
+static std::string
+FormatTime(const std::chrono::system_clock::time_point& time)
+{
+	if (time == std::chrono::system_clock::time_point{})
+		return "<never>";
+
+	const std::time_t timePoint = std::chrono::system_clock::to_time_t(time);
+	struct tm timeInfo;
+	std::ostringstream s;
+	s << std::put_time(::localtime_r(&timePoint, &timeInfo), "%Y-%m-%d %X");
+	return s.str();
+}
+
+
 std::string
 AgentService::LastInventoryTime() const
 {
-	if (fLastInventoryEnd == std::chrono::system_clock::time_point{})
-		return "<never>";
-
-	const std::time_t timePoint = std::chrono::system_clock::to_time_t(fLastInventoryEnd);
-	std::ostringstream s;
-	s << std::put_time(std::localtime(&timePoint), "%Y-%m-%d %X");
-	return s.str();
+	std::chrono::system_clock::time_point lastInventoryEnd;
+	{
+		std::lock_guard lock(fMutex);
+		lastInventoryEnd = fLastInventoryEnd;
+	}
+	return FormatTime(lastInventoryEnd);
 }
 
 
 std::string
 AgentService::LastInventoryRequestedTime() const
 {
-	if (fLastInventoryRequest == std::chrono::system_clock::time_point{})
-		return "<never>";
-
-	const std::time_t timePoint = std::chrono::system_clock::to_time_t(fLastInventoryRequest);
-	std::ostringstream s;
-	s << std::put_time(std::localtime(&timePoint), "%Y-%m-%d %X");
-	return s.str();
+	std::chrono::system_clock::time_point lastInventoryRequest;
+	{
+		std::lock_guard lock(fMutex);
+		lastInventoryRequest = fLastInventoryRequest;
+	}
+	return FormatTime(lastInventoryRequest);
 }
 
 
@@ -277,18 +289,20 @@ AgentService::_InventoryLoop()
 			break;
 
 		fInventoryRequested = false;
+		fLastInventoryStart = std::chrono::system_clock::now();
 
 		lock.unlock();
 
 		try {
 			fInventoryRunning = true;
-			fLastInventoryStart = std::chrono::system_clock::now();
 			bool noSoftware = (Configuration::Get()->KeyValue(CONF_NO_SOFTWARE) == CONF_VALUE_TRUE);
 			fAgent->RunInventory(noSoftware);
 			// TODO: What if we don't have a server url ?
 			// Only successful inventories are reported as "last inventory"
-			if (fAgent->SendToServer(Configuration::Get()->ServerURL()))
+			if (fAgent->SendToServer(Configuration::Get()->ServerURL())) {
+				std::lock_guard endLock(fMutex);
 				fLastInventoryEnd = std::chrono::system_clock::now();
+			}
 		} catch (std::exception& ex) {
 			Logger::Log(LOG_ERR, ex.what());
 
