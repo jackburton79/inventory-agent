@@ -167,7 +167,7 @@ HandleArgs(int argc, char **argv)
 				verbose = true;
 				break;
 			case 'w':
-				config->SetVolatileKeyValue("waittime", optarg);
+				config->SetVolatileKeyValue(CONF_WAIT_TIME, optarg);
 				break;
 			case 0:
 			{

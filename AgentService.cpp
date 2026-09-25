@@ -130,6 +130,15 @@ bool
 AgentService::RunOneShot()
 {
 	const Configuration* config = Configuration::Get();
+
+	// -w/--wait: wait before building the inventory. Can be
+	// interrupted by SIGINT/SIGTERM, which clear fRunning.
+	fRunning = true;
+	for (int seconds = _WaitTime(); seconds > 0 && fRunning; seconds--)
+		::sleep(1);
+	if (!fRunning)
+		return false;
+
 	bool noSoftware = (config->KeyValue(CONF_NO_SOFTWARE) == CONF_VALUE_TRUE);
 	fAgent->RunInventory(noSoftware);
 	if (config->KeyValue(CONF_OUTPUT_STDOUT) == CONF_VALUE_TRUE) {
@@ -343,6 +352,27 @@ AgentService::_ShouldRunScheduledInventory()
 
 	fNextScheduledInventory = now + _ScheduleInterval();
 	return true;
+}
+
+
+/* static */
+int
+AgentService::_WaitTime()
+{
+	std::string waitString = Configuration::Get()->KeyValue(CONF_WAIT_TIME);
+	if (waitString.empty())
+		return 0;
+
+	try {
+		size_t end = 0;
+		int seconds = std::stoi(waitString, &end);
+		if (end == waitString.length() && seconds >= 0)
+			return seconds;
+	} catch (...) {
+	}
+
+	Logger::LogFormat(LOG_ERR, "AgentService: invalid wait time '%s', ignored", waitString.c_str());
+	return 0;
 }
 
 

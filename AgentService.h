@@ -51,6 +51,7 @@ private:
 	bool _ShouldRunScheduledInventory();
 	static std::chrono::seconds _ScheduleInterval();
 	static int _WebServerPort();
+	static int _WaitTime();
 
 	WebServer* fServer;
 	Agent* fAgent;
