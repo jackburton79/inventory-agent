@@ -31,6 +31,10 @@
 #include <stdexcept>
 #include <vector>
 
+// Upper limit for a response body, to avoid exhausting memory
+// with a malformed (or malicious) reply
+static const size_t kMaxBodyLength = 64 * 1024 * 1024;
+
 HTTP::HTTP()
 	:
 	fPort(-1),
@@ -179,13 +183,20 @@ HTTP::Request(const HTTPRequestHeader& header, const void* data, const size_t da
 		return error;
 	}
 
-	int code;
-	::sscanf(replyString.c_str(), "HTTP/1.%*d %03d", &code);
 	fLastResponse.Clear();
+
+	int code = 0;
+	if (::sscanf(replyString.c_str(), "HTTP/1.%*d %03d", &code) != 1) {
+		fLastError = EPROTO;
+		return fLastError;
+	}
+
 	try {
 		fLastResponse.SetStatusLine(code, replyString);
 		while (_ReadLineFromSocket(replyString, fSocket)) {
 			size_t pos = replyString.find(":");
+			if (pos == std::string::npos)
+				continue; // not a header, ignore it
 			std::string value = replyString.substr(pos + 1, std::string::npos);
 			trim(value);
 			fLastResponse.SetValue(replyString.substr(0, pos), value);
@@ -225,6 +236,10 @@ HTTP::Request(const HTTPRequestHeader& header, const void* data, const size_t da
 	} else if (fLastResponse.HasContentLength()) {
 		const size_t contentLength =
 			fLastResponse.ContentLength();
+		if (contentLength > kMaxBodyLength) {
+			fLastError = EFBIG;
+			return fLastError;
+		}
 
 		char* resultData = new char[contentLength + 1];
 		int read = Read(resultData, contentLength);
@@ -358,6 +373,9 @@ HTTP::_ReadChunkedData(Socket* socket, std::string& data)
 		unsigned int chunkSize = 0;
 		if (::sscanf(line.c_str(), "%x", &chunkSize) != 1)
 			return EPROTO;
+
+		if (chunkSize > kMaxBodyLength - data.size())
+			return EFBIG;
 
 		if (chunkSize == 0) {
 			// eventuali trailer header
