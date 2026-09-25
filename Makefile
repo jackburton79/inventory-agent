@@ -16,7 +16,7 @@
 #   V=1       show the full compiler command lines
 
 PROGRAM := ocsinventory-agent
-TESTS := test/urltest test/processors-info-test
+TESTS := test/urltest test/zlibtest test/processors-info-test
 
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
@@ -92,8 +92,9 @@ $(TESTS): test/%: $(BUILDDIR)/test/%.o $(COMMON_OBJS)
 	@echo "  LD      $@"
 	$(Q)$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-check: test/urltest
+check: test/urltest test/zlibtest
 	./test/urltest
+	./test/zlibtest
 
 install: $(PROGRAM)
 	$(INSTALL) -d $(DESTDIR)$(BINDIR)

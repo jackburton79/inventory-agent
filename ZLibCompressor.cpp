@@ -7,40 +7,59 @@
 
 #include "ZLibCompressor.h"
 
-#include <iostream>
+#include "Logger.h"
+
+#include <algorithm>
 #include <zlib.h>
+
+// Upper limit for the uncompressed data, to avoid exhausting memory
+// with a malformed (or malicious) reply
+static const size_t kMaxUncompressedLength = 64 * 1024 * 1024;
+
 
 /*static */
 bool
-ZLibCompressor::Compress(const char* source, size_t sourceLength, char*& destination, size_t& destLength)
+ZLibCompressor::Compress(const char* source, size_t sourceLength, std::string& destination)
 {
-	destLength = compressBound(sourceLength);
-	destination = new char[destLength];
+	uLongf destLength = compressBound(sourceLength);
+	destination.resize(destLength);
 
-	if (int compressStatus = compress((Bytef*)destination, (uLongf*)&destLength,
-			(const Bytef*)source, (uLong)sourceLength) != Z_OK) {
-		std::cerr << "Compress returned error: " << zError(compressStatus) << std::endl;
-		delete[] destination;
+	int status = compress(reinterpret_cast<Bytef*>(&destination[0]), &destLength,
+			reinterpret_cast<const Bytef*>(source), static_cast<uLong>(sourceLength));
+	if (status != Z_OK) {
+		Logger::LogFormat(LOG_ERR, "ZLibCompressor: compress failed: %s", zError(status));
+		destination.clear();
 		return false;
 	}
+
+	destination.resize(destLength);
 	return true;
 }
 
 
 /* static */
 bool
-ZLibCompressor::Uncompress(const char* source, size_t sourceLen, char*& destination, size_t& destLength)
+ZLibCompressor::Uncompress(const char* source, size_t sourceLength, std::string& destination)
 {
-	destLength = 32768;
-	destination = new char[destLength];
-
-	if (int status = uncompress((Bytef*)destination, (uLongf*)&destLength,
-			(const Bytef*)source, (uLong)sourceLen) != Z_OK) {
-		std::cerr << "UncompressXml: Failed to decompress XML: ";
-		std::cerr << zError(status) << std::endl;
-		delete[] destination;
-		return false;
+	// The uncompressed size is not known in advance: start with a
+	// reasonable buffer and grow it until the data fits
+	size_t bufferLength = std::max(sourceLength * 4, static_cast<size_t>(32768));
+	int status = Z_BUF_ERROR;
+	while (bufferLength <= kMaxUncompressedLength) {
+		destination.resize(bufferLength);
+		uLongf destLength = bufferLength;
+		status = uncompress(reinterpret_cast<Bytef*>(&destination[0]), &destLength,
+			reinterpret_cast<const Bytef*>(source), static_cast<uLong>(sourceLength));
+		if (status == Z_OK) {
+			destination.resize(destLength);
+			return true;
+		}
+		if (status != Z_BUF_ERROR)
+			break;
+		bufferLength *= 2;
 	}
 
-	return true;
+	Logger::LogFormat(LOG_ERR, "ZLibCompressor: uncompress failed: %s", zError(status));
+	destination.clear();
+	return false;
 }

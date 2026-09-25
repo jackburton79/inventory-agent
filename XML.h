@@ -23,7 +23,7 @@ public:
 		match_full = 1	
 	};
 	static std::string ToString(const tinyxml2::XMLDocument& document);
-	static bool Serialize(const tinyxml2::XMLDocument& document, char*& destination, size_t& destLength);
+	static bool Serialize(const tinyxml2::XMLDocument& document, std::string& destination);
 	static bool Deserialize(const char* source, size_t sourceLen, tinyxml2::XMLDocument& document);
 
 	static std::string GetElementText(const tinyxml2::XMLNode& node, const std::string& elementName);
