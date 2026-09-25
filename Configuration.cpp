@@ -47,6 +47,7 @@ Configuration::Get()
 bool
 Configuration::Load(const char* fileName)
 {
+	std::lock_guard<std::mutex> lock(fLock);
 	fConfigFileName = fileName;
 	try {
 		std::ifstream configFile(fileName);
@@ -67,6 +68,7 @@ Configuration::Load(const char* fileName)
 bool
 Configuration::Save(const char* fileName)
 {
+	std::lock_guard<std::mutex> lock(fLock);
 	// The file may contain credentials: if it doesn't exist yet,
 	// create it readable only by the owner
 	int fd = ::open(fileName, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
@@ -88,16 +90,22 @@ Configuration::Save(const char* fileName)
 bool
 Configuration::Save()
 {
-	if (fConfigFileName == "")
+	std::string fileName;
+	{
+		std::lock_guard<std::mutex> lock(fLock);
+		fileName = fConfigFileName;
+	}
+	if (fileName.empty())
 		return false;
 
-	return Save(fConfigFileName.c_str());
+	return Save(fileName.c_str());
 }
 
 
 void
 Configuration::Print() const
 {
+	std::lock_guard<std::mutex> lock(fLock);
 	std::cout << "Configuration:" << std::endl;
 	try {
 		std::cout << "Persistent:" << std::endl;
@@ -116,6 +124,7 @@ Configuration::Print() const
 void
 Configuration::SetServer(const char* serverUrl)
 {
+	std::lock_guard<std::mutex> lock(fLock);
 	// Server set from the command line: don't store it in the
 	// configuration file, since it may contain credentials
 	fVolatileValues[kServer] = serverUrl;
@@ -125,6 +134,7 @@ Configuration::SetServer(const char* serverUrl)
 void
 Configuration::SetOutputFileName(const char* fileName)
 {
+	std::lock_guard<std::mutex> lock(fLock);
 	fValues[kOutputFileName] = fileName;
 }
 
@@ -132,6 +142,7 @@ Configuration::SetOutputFileName(const char* fileName)
 void
 Configuration::SetKeyValueBoolean(const char* key, bool value)
 {
+	std::lock_guard<std::mutex> lock(fLock);
 	fValues[key] = _BooleanToString(value);
 }
 
@@ -139,6 +150,7 @@ Configuration::SetKeyValueBoolean(const char* key, bool value)
 void
 Configuration::SetVolatileKeyValueBoolean(const char* key, bool value)
 {
+	std::lock_guard<std::mutex> lock(fLock);
 	fVolatileValues[key] = _BooleanToString(value);
 }
 
@@ -156,6 +168,7 @@ Configuration::KeyValueBoolean(const char* key) const
 void
 Configuration::SetKeyValue(const char* key, const char* value)
 {
+	std::lock_guard<std::mutex> lock(fLock);
 	fValues[key] = value;
 }
 
@@ -163,6 +176,7 @@ Configuration::SetKeyValue(const char* key, const char* value)
 std::string
 Configuration::KeyValue(const char* key) const
 {
+	std::lock_guard<std::mutex> lock(fLock);
 	std::map<std::string, std::string>::const_iterator i;
 	i = fValues.find(key);
 	if (i != fValues.end())
@@ -180,6 +194,7 @@ Configuration::KeyValue(const char* key) const
 void
 Configuration::SetVolatileKeyValue(const char* key, const char* value)
 {
+	std::lock_guard<std::mutex> lock(fLock);
 	fVolatileValues[key] = value;
 }
 
@@ -188,6 +203,7 @@ Configuration::SetVolatileKeyValue(const char* key, const char* value)
 std::string
 Configuration::DeviceID() const
 {
+	std::lock_guard<std::mutex> lock(fLock);
 	std::map<std::string, std::string>::const_iterator i;
 	i = fValues.find(kDeviceID);
 	if (i == fValues.end())
@@ -200,6 +216,7 @@ Configuration::DeviceID() const
 void
 Configuration::SetDeviceID(const char* deviceID)
 {
+	std::lock_guard<std::mutex> lock(fLock);
 	fValues[kDeviceID] = deviceID;
 }
 
@@ -207,6 +224,7 @@ Configuration::SetDeviceID(const char* deviceID)
 std::string
 Configuration::ServerURL() const
 {
+	std::lock_guard<std::mutex> lock(fLock);
 	// The server specified on the command line wins
 	std::map<std::string, std::string>::const_iterator i;
 	i = fVolatileValues.find(kServer);
@@ -231,6 +249,7 @@ Configuration::LocalInventory() const
 std::string
 Configuration::OutputFileName() const
 {
+	std::lock_guard<std::mutex> lock(fLock);
 	std::map<std::string, std::string>::const_iterator i;
 	i = fValues.find(kOutputFileName);
 	if (i != fValues.end())
@@ -242,6 +261,7 @@ Configuration::OutputFileName() const
 bool
 Configuration::UseCurrentTimeInDeviceID() const
 {
+	std::lock_guard<std::mutex> lock(fLock);
 	std::map<std::string, std::string>::const_iterator i;
 	i = fValues.find(kUseCurrentTimeInDeviceID);
 	if (i == fValues.end())
@@ -254,6 +274,7 @@ Configuration::UseCurrentTimeInDeviceID() const
 void
 Configuration::SetUseCurrentTimeInDeviceID(bool use)
 {
+	std::lock_guard<std::mutex> lock(fLock);
 	fValues[kUseCurrentTimeInDeviceID] = _BooleanToString(use);
 }
 

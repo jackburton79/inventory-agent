@@ -7,3 +7,4 @@ ocsinventory-agent
 test/processors-info-test
 test/urltest
 build/
+test/zlibtest

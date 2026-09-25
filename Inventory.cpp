@@ -211,9 +211,8 @@ Inventory::Send(const char* serverUrl)
 	Logger::LogFormat(LOG_DEBUG, "Inventory::Send(): server URL: %s", serverUrl);
 	tinyxml2::XMLDocument prolog;
 	_WriteProlog(prolog);
-	char* prologData = NULL;
-	size_t prologLength = 0;
-	if (!XML::Serialize(prolog, prologData, prologLength)) {
+	std::string prologData;
+	if (!XML::Serialize(prolog, prologData)) {
 		Logger::Log(LOG_ERR, "Error while serializing XML prolog!");
 		return false;
 	}
@@ -223,16 +222,13 @@ Inventory::Send(const char* serverUrl)
 
 	if (compress) {
 		Logger::Log(LOG_DEBUG, "Compressing prolog...");
-		size_t destLength;
-		char* destData = NULL;
-		if (!ZLibCompressor::Compress(prologData, prologLength, destData, destLength)) {
+		std::string compressedData;
+		if (!ZLibCompressor::Compress(prologData.data(), prologData.length(), compressedData)) {
 			Logger::Log(LOG_ERR, "Error while compressing XML prolog!");
 			return false;
 		}
 		Logger::Log(LOG_DEBUG, "Prolog compressed correctly!");
-		delete[] prologData;
-		prologData = destData;
-		prologLength = destLength;
+		prologData.swap(compressedData);
 	}
 
 	HTTPRequestHeader requestHeader;
@@ -240,7 +236,7 @@ Inventory::Send(const char* serverUrl)
 	requestHeader.SetValue("Pragma", "no-cache");
 	requestHeader.SetValue("Keep-Alive", "300");
 	requestHeader.SetValue("Connection", "Keep-Alive, TE");
-	requestHeader.SetContentLength(prologLength);
+	requestHeader.SetContentLength(prologData.length());
 	if (compress) {
 		requestHeader.SetValue("TE", "deflate, gzip");
 		requestHeader.SetContentType("application/x-compress");
@@ -264,8 +260,7 @@ Inventory::Send(const char* serverUrl)
 
 		Logger::Log(LOG_DEBUG, "Inventory::Send(): Prolog prepared!");
 		Logger::LogFormat(LOG_DEBUG, "%s", requestHeader.ToString().c_str());
-		if (httpObject.Request(requestHeader, prologData, prologLength) != 0) {
-			delete[] prologData;
+		if (httpObject.Request(requestHeader, prologData.data(), prologData.length()) != 0) {
 			Logger::LogFormat(LOG_ERR, "Inventory::Send(): Failed to send prolog: %s",
 						httpObject.ErrorString().c_str());
 			return false;
@@ -279,8 +274,6 @@ Inventory::Send(const char* serverUrl)
 				continue;
 			}
 		}
-
-		delete[] prologData;
 
 		bool isOk = responseHeader.StatusCode() == HTTP_OK;
 		if (isOk)
@@ -301,6 +294,7 @@ Inventory::Send(const char* serverUrl)
 
 		// responseHeader keeps the ownership
 		const char* resultData = responseHeader.Data();
+		std::string decompressedData;
 
 		// TODO: OCS Inventory always use "application/x-compressed" but
 		// sends a non compressed XML if we didn't compress prolog
@@ -309,15 +303,12 @@ Inventory::Send(const char* serverUrl)
 
 		if (contentType == "application/x-compressed") {
 			Logger::Log(LOG_DEBUG, "Inventory::Send(): Decompressing reply... ");
-			char* decompressedData = NULL;
-			size_t decompressedLength = 0;
-			bool uncompress = ZLibCompressor::Uncompress(resultData, contentLength, decompressedData, decompressedLength);
-			if (!uncompress) {
+			if (!ZLibCompressor::Uncompress(resultData, contentLength, decompressedData)) {
 				Logger::Log(LOG_ERR, "failed to decompress data");
 				return false;
 			}
-			resultData = decompressedData;
-			contentLength = decompressedLength;
+			resultData = decompressedData.data();
+			contentLength = decompressedData.length();
 		} else if (contentType != "application/xml") {
 			Logger::Log(LOG_ERR, "Unexpected reply");
 			Logger::Log(LOG_ERR, httpObject.LastResponse().ToString().c_str());
@@ -342,25 +333,21 @@ Inventory::Send(const char* serverUrl)
 		return false;
 	}
 
-	char* inventoryData = NULL;
-	size_t inventoryLength;
+	std::string inventoryData;
 	Logger::Log(LOG_DEBUG, "Inventory::Send(): Serializing XML inventory data... ");
-	if (!XML::Serialize(*fDocument, inventoryData, inventoryLength)) {
+	if (!XML::Serialize(*fDocument, inventoryData)) {
 		Logger::Log(LOG_ERR, "Error while serializing XML data!");
 		return false;
 	}
 
 	if (compress) {
 		Logger::Log(LOG_DEBUG, "Inventory::Send(): Compressing inventory data... ");
-		size_t compressedLength;
-		char* compressedData = NULL;
-		if (!ZLibCompressor::Compress(inventoryData, inventoryLength, compressedData, compressedLength)) {
+		std::string compressedData;
+		if (!ZLibCompressor::Compress(inventoryData.data(), inventoryData.length(), compressedData)) {
 			Logger::Log(LOG_ERR, "Error while compressing XML data!");
 			return false;
 		}
-		delete[] inventoryData;
-		inventoryData = compressedData;
-		inventoryLength = compressedLength;
+		inventoryData.swap(compressedData);
 	}
 
 	requestHeader.Clear();
@@ -368,7 +355,7 @@ Inventory::Send(const char* serverUrl)
 	requestHeader.SetValue("Pragma", "no-cache");
 	requestHeader.SetValue("Keep-Alive", "300");
 	requestHeader.SetValue("Connection", "Keep-Alive");
-	requestHeader.SetContentLength(inventoryLength);
+	requestHeader.SetContentLength(inventoryData.length());
 	if (compress) {
 		requestHeader.SetValue("TE", "deflate, gzip");
 		requestHeader.SetContentType("application/x-compress");
@@ -383,14 +370,11 @@ Inventory::Send(const char* serverUrl)
 	}
 
 	Logger::LogFormat(LOG_DEBUG, "Inventory::Send(): Sending inventory data...");
-	if (httpObject.Request(requestHeader, inventoryData, inventoryLength) != 0) {
-		delete[] inventoryData;
+	if (httpObject.Request(requestHeader, inventoryData.data(), inventoryData.length()) != 0) {
 		Logger::LogFormat(LOG_ERR, "Inventory::Send(): error while sending inventory: %s",
 				httpObject.ErrorString().c_str());
 		return false;
 	}
-
-	delete[] inventoryData;
 
 	bool statusOk = _HandleResponse(httpObject);
 	if (statusOk)
@@ -398,7 +382,7 @@ Inventory::Send(const char* serverUrl)
 	else
 		Logger::Log(LOG_ERR, "Inventory::Send(): Inventory was rejected by server!");
 
-	return true;
+	return statusOk;
 }
 
 

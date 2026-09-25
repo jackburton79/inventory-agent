@@ -222,6 +222,8 @@ main(int argc, char **argv)
 {
 	HandleArgs(argc, argv);
 
+	int exitStatus = 0;
+
 	try {
 		sAgentService = new AgentService();
 
@@ -231,8 +233,8 @@ main(int argc, char **argv)
 		const Configuration* config = Configuration::Get();
 		if (config->KeyValue("DAEMONIZE") == CONF_VALUE_TRUE)
 			sAgentService->Run();
-		else
-			sAgentService->RunOneShot();
+		else if (!sAgentService->RunOneShot())
+			exitStatus = 1;
 
 		delete sAgentService;
 #if DEBUG
@@ -249,6 +251,6 @@ main(int argc, char **argv)
 
 	Configuration::Get()->Save();
 
-	return 0;
+	return exitStatus;
 }
 

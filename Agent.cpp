@@ -30,9 +30,6 @@
 
 const char* kVersion = "3.1.1";
 
-std::string Agent::sAgentString;
-
-
 Agent::Agent()
 	:
 	fInventory(nullptr)
@@ -51,6 +48,10 @@ void
 Agent::RunInventory(bool noSoftware)
 {
 	Logger::Log(LOG_INFO, "Agent::RunInventory()");
+
+	// Start from scratch: in daemon mode the data collected by the
+	// previous run would otherwise be kept (Merge() only fills empty fields)
+	gComponents.clear();
 
 	// TODO: Move these away from here
 	DMIDataBackend().Run();
@@ -85,10 +86,10 @@ Agent::PrintToStream()
 }
 
 
-void
+bool
 Agent::SaveToFile(const std::string& filePathName)
 {
-	fInventory->Save(filePathName.c_str());
+	return fInventory->Save(filePathName.c_str());
 }
 
 
@@ -124,14 +125,13 @@ Agent::LegacyAgentString()
 std::string
 Agent::AgentString()
 {
-	if (sAgentString.empty()) {
+	// Initialized only once, in a thread safe way, since this
+	// is called both by the inventory and the web server threads
+	static const std::string sAgentString = []() {
 		std::string agentString = Configuration::Get()->KeyValue(CONF_AGENT_STRING);
-		if (!agentString.empty())
-			sAgentString = agentString;
-		else {
-			sAgentString = "jack_lite_inventory_agent_v";
-			sAgentString.append(Version());
-		}
-	}
+		if (agentString.empty())
+			agentString = std::string("jack_lite_inventory_agent_v").append(Version());
+		return agentString;
+	}();
 	return sAgentString;
 }

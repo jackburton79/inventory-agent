@@ -21,7 +21,7 @@ public:
 	std::string LastInventoryXML() const;
 
 	void PrintToStream();
-	void SaveToFile(const std::string& filePathName);
+	bool SaveToFile(const std::string& filePathName);
 	bool SendToServer(const std::string& serverString);
 
 	static std::string Version();
@@ -38,7 +38,6 @@ private:
 	void _SendInventory();
 
 	Inventory* fInventory;
-	static std::string sAgentString;
 };
 
 #endif /* AGENT_H_ */

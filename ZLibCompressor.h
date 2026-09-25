@@ -8,12 +8,13 @@
 #ifndef ZLIBCOMPRESSOR_H_
 #define ZLIBCOMPRESSOR_H_
 
+#include <string>
 #include <sys/types.h>
 
 class ZLibCompressor {
 public:
-	static bool Compress(const char* source, size_t sourceLength, char*& destination, size_t& destLength);
-	static bool Uncompress(const char* source, size_t sourceLen, char*& destination, size_t& destLength);
+	static bool Compress(const char* source, size_t sourceLength, std::string& destination);
+	static bool Uncompress(const char* source, size_t sourceLength, std::string& destination);
 };
 
 

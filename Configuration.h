@@ -9,6 +9,7 @@
 #define CONFIGURATION_H_
 
 #include <map>
+#include <mutex>
 #include <string>
 
 #define CONF_AGENT_STRING "agent-string"
@@ -59,6 +60,9 @@ private:
 	static std::string _BooleanToString(bool value);
 	static bool _StringToBoolean(const std::string& string);
 
+	// Protects all the members below: the configuration is accessed
+	// both by the inventory and by the web server threads
+	mutable std::mutex fLock;
 	std::map<std::string, std::string> fValues;
 	std::map<std::string, std::string> fVolatileValues;
 	std::string fConfigFileName;

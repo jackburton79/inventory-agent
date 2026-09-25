@@ -87,15 +87,16 @@ AgentService::Run()
 
 	fRunning = true;
 
+	// Schedule the first inventory in one minute from now so it runs when the system is completely up
+	// (X takes some time on our old machines)
+	// TODO: make it configurable
+	// Must be set before starting the scheduler thread, which owns it afterwards
+	fNextScheduledInventory = std::chrono::steady_clock::now() + std::chrono::minutes(1);
+
 	fInventoryThread =
 		std::thread(&AgentService::_InventoryLoop, this);
 	fSchedulerThread =
 		std::thread(&AgentService::_SchedulingLoop, this);
-
-	// Schedule the first inventory in one minute from now so it runs when the system is completely up
-	// (X takes some time on our old machines)
-	// TODO: make it configurable
-	fNextScheduledInventory = std::chrono::steady_clock::now() + std::chrono::minutes(1);
 
 #if 1
 	// TODO: add configuration
@@ -123,22 +124,25 @@ AgentService::Run()
 }
 
 
-void
+bool
 AgentService::RunOneShot()
 {
 	const Configuration* config = Configuration::Get();
 	bool noSoftware = (config->KeyValue(CONF_NO_SOFTWARE) == CONF_VALUE_TRUE);
 	fAgent->RunInventory(noSoftware);
-	if (config->KeyValue(CONF_OUTPUT_STDOUT) == CONF_VALUE_TRUE)
+	if (config->KeyValue(CONF_OUTPUT_STDOUT) == CONF_VALUE_TRUE) {
 		fAgent->PrintToStream();
-	else if (config->LocalInventory()) {
+		return true;
+	}
+
+	if (config->LocalInventory()) {
 		std::string fullFileName = config->OutputFileName();
 		if (fullFileName[fullFileName.length() - 1] == '/')
 			fullFileName.append(config->DeviceID()).append(".xml");
-		fAgent->SaveToFile(fullFileName);
-	} else {
-		fAgent->SendToServer(config->ServerURL());
+		return fAgent->SaveToFile(fullFileName);
 	}
+
+	return fAgent->SendToServer(config->ServerURL());
 }
 
 
@@ -193,29 +197,41 @@ AgentService::StatusString() const
 }
 
 
+static std::string
+FormatTime(const std::chrono::system_clock::time_point& time)
+{
+	if (time == std::chrono::system_clock::time_point{})
+		return "<never>";
+
+	const std::time_t timePoint = std::chrono::system_clock::to_time_t(time);
+	struct tm timeInfo;
+	std::ostringstream s;
+	s << std::put_time(::localtime_r(&timePoint, &timeInfo), "%Y-%m-%d %X");
+	return s.str();
+}
+
+
 std::string
 AgentService::LastInventoryTime() const
 {
-	if (fLastInventoryEnd == std::chrono::system_clock::time_point{})
-		return "<never>";
-
-	const std::time_t timePoint = std::chrono::system_clock::to_time_t(fLastInventoryEnd);
-	std::ostringstream s;
-	s << std::put_time(std::localtime(&timePoint), "%Y-%m-%d %X");
-	return s.str();
+	std::chrono::system_clock::time_point lastInventoryEnd;
+	{
+		std::lock_guard lock(fMutex);
+		lastInventoryEnd = fLastInventoryEnd;
+	}
+	return FormatTime(lastInventoryEnd);
 }
 
 
 std::string
 AgentService::LastInventoryRequestedTime() const
 {
-	if (fLastInventoryRequest == std::chrono::system_clock::time_point{})
-		return "<never>";
-
-	const std::time_t timePoint = std::chrono::system_clock::to_time_t(fLastInventoryRequest);
-	std::ostringstream s;
-	s << std::put_time(std::localtime(&timePoint), "%Y-%m-%d %X");
-	return s.str();
+	std::chrono::system_clock::time_point lastInventoryRequest;
+	{
+		std::lock_guard lock(fMutex);
+		lastInventoryRequest = fLastInventoryRequest;
+	}
+	return FormatTime(lastInventoryRequest);
 }
 
 
@@ -274,17 +290,20 @@ AgentService::_InventoryLoop()
 			break;
 
 		fInventoryRequested = false;
+		fLastInventoryStart = std::chrono::system_clock::now();
 
 		lock.unlock();
 
 		try {
 			fInventoryRunning = true;
-			fLastInventoryStart = std::chrono::system_clock::now();
 			bool noSoftware = (Configuration::Get()->KeyValue(CONF_NO_SOFTWARE) == CONF_VALUE_TRUE);
 			fAgent->RunInventory(noSoftware);
 			// TODO: What if we don't have a server url ?
-			fAgent->SendToServer(Configuration::Get()->ServerURL());
-			fLastInventoryEnd = std::chrono::system_clock::now();
+			// Only successful inventories are reported as "last inventory"
+			if (fAgent->SendToServer(Configuration::Get()->ServerURL())) {
+				std::lock_guard endLock(fMutex);
+				fLastInventoryEnd = std::chrono::system_clock::now();
+			}
 		} catch (std::exception& ex) {
 			Logger::Log(LOG_ERR, ex.what());
 
@@ -304,7 +323,6 @@ AgentService::_SchedulingLoop()
 		if (_ShouldRunScheduledInventory()) {
 			Logger::Log(LOG_DEBUG, "AgentService: scheduled inventory trigger");
 			ScheduleInventory();
-			fLastScheduledInventoryRun = std::chrono::steady_clock::now();
 		}
 
 		std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -317,28 +335,37 @@ AgentService::_SchedulingLoop()
 bool
 AgentService::_ShouldRunScheduledInventory()
 {
-	bool shouldRun  = false;
 	auto now = std::chrono::steady_clock::now();
-	if (now >= fNextScheduledInventory && fLastScheduledInventoryRun < fNextScheduledInventory) {
-		shouldRun = true;
+	if (now < fNextScheduledInventory)
+		return false;
+
+	fNextScheduledInventory = now + _ScheduleInterval();
+	return true;
+}
+
+
+/* static */
+std::chrono::seconds
+AgentService::_ScheduleInterval()
+{
+	// Same as the default PROLOG_FREQ of OCS Inventory NG
+	const std::chrono::seconds kDefaultInterval = std::chrono::hours(24);
+
+	// Interval between two scheduled inventories, in seconds (e.g. 3600).
+	// Note that ScheduleInventory() doesn't accept more than one
+	// request per minute, so shorter intervals are not effective.
+	std::string intervalString = Configuration::Get()->KeyValue("schedule_interval");
+	if (intervalString.empty())
+		return kDefaultInterval;
+
+	try {
+		int intervalSeconds = std::stoi(intervalString);
+		if (intervalSeconds > 0)
+			return std::chrono::seconds(intervalSeconds);
+	} catch (...) {
 	}
 
-	const Configuration* config = Configuration::Get();
-	// Check interval-based scheduling (e.g., every 3600 seconds)
-	std::string intervalStr = config->KeyValue("schedule_interval");
-	if (!intervalStr.empty()) {
-		try {
-			int intervalSeconds = std::stoi(intervalStr);
-			if (intervalSeconds > 0) {
-				if (shouldRun) {
-					fNextScheduledInventory = now +
-						std::chrono::seconds(intervalSeconds);
-				}
-			}
-		} catch (...) {
-			Logger::Log(LOG_ERR, "AgentService: invalid schedule-interval value");
-		}
-	}
-
-	return shouldRun;
+	Logger::LogFormat(LOG_ERR, "AgentService: invalid schedule_interval value '%s', using %ld seconds",
+		intervalString.c_str(), static_cast<long>(kDefaultInterval.count()));
+	return kDefaultInterval;
 }

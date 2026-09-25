@@ -23,7 +23,8 @@ public:
 	~AgentService();
 
 	void Run();
-	void RunOneShot();
+	// Returns false if the inventory could not be saved or sent
+	bool RunOneShot();
 
 	void Stop();
 	// Async-signal-safe: only flags the service for termination
@@ -48,6 +49,7 @@ private:
 	void _InventoryLoop();
 	void _SchedulingLoop();
 	bool _ShouldRunScheduledInventory();
+	static std::chrono::seconds _ScheduleInterval();
 
 	WebServer* fServer;
 	Agent* fAgent;
@@ -55,13 +57,14 @@ private:
 	std::thread fInventoryThread;
 	std::thread fSchedulerThread;
 	std::condition_variable fCondition;
-	std::mutex fMutex;
+	// Protects fInventoryRequested/fRunning transitions
+	// and the fLastInventory* time points
+	mutable std::mutex fMutex;
 
 	std::chrono::system_clock::time_point fLastInventoryRequest;
 	std::chrono::system_clock::time_point fLastInventoryStart;
 	std::chrono::system_clock::time_point fLastInventoryEnd;
 	std::chrono::steady_clock::time_point fNextScheduledInventory;
-	std::chrono::steady_clock::time_point fLastScheduledInventoryRun;
 
 	std::atomic_bool fInventoryRequested;
 	std::atomic_bool fInventoryRunning;

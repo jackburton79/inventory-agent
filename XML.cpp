@@ -59,14 +59,13 @@ XML::ToString(const tinyxml2::XMLDocument& document)
 
 
 bool
-XML::Serialize(const tinyxml2::XMLDocument& document, char*& destination, size_t& destLength)
+XML::Serialize(const tinyxml2::XMLDocument& document, std::string& destination)
 {
 	tinyxml2::XMLPrinter memoryPrinter;
 	document.Print(&memoryPrinter);
 
-	destination = new char[memoryPrinter.CStrSize()];
-	memcpy(destination, memoryPrinter.CStr(), memoryPrinter.CStrSize() - 1);
-	destLength = memoryPrinter.CStrSize() - 1;
+	// CStrSize() includes the terminating NUL
+	destination.assign(memoryPrinter.CStr(), memoryPrinter.CStrSize() - 1);
 
 	return true;
 }
