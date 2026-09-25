@@ -21,13 +21,30 @@ const std::string head = "<head>"
 		"<link rel=\"stylesheet\" href=\"site.css\" type=\"text/css\" />"
 		"</head>";
 
+// Returns true if address matches exactly one of the entries
+// of the list (separated by commas, semicolons or whitespace)
+static bool
+IsInAddressList(const std::string& address, const std::string& list)
+{
+	const char* kSeparators = ",; \t";
+	size_t start = list.find_first_not_of(kSeparators);
+	while (start != std::string::npos) {
+		size_t end = list.find_first_of(kSeparators, start);
+		if (list.compare(start, end - start, address) == 0)
+			return true;
+		start = list.find_first_not_of(kSeparators, end);
+	}
+	return false;
+}
+
+
 static bool
 IsTrusted(const std::string& address)
 {
 	std::string trustedIPs = Configuration::Get()->KeyValue("httpd-trust");
 
-	if (address.compare("127.0.0.1") == 0 ||
-			trustedIPs.find(address) != std::string::npos)
+	if (address.compare("127.0.0.1") == 0 || address.compare("::1") == 0 ||
+			IsInAddressList(address, trustedIPs))
 		return true;
 
 	// TODO: move to its own method
