@@ -49,9 +49,11 @@ The project includes ![TinyXML2](https://github.com/leethomason/tinyxml2) and ![
 
     make                            # build the agent and the test programs
     make check                      # run the unit tests
-    make install                    # install to /usr/local/bin
+    make install                    # install to /usr/local/bin (stripped)
     make install PREFIX=/usr DESTDIR=/tmp/pkg   # staged install, e.g. for packaging
+    make install INSTALL_STRIP=     # install without stripping the symbols
 
+The agent is optimized for size (`-Os`, with unused code removed at link time).
 Use `make DEBUG=1` for a debug build and `make V=1` to see the full compiler command lines.
 The usual `CC`, `CXX`, `CFLAGS`, `CXXFLAGS`, `CPPFLAGS`, `LDFLAGS` and `LDLIBS` variables are honored.
 
