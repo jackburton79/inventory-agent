@@ -7,5 +7,5 @@ THINSTATION_PATH=$(cat ../../THINSTATION_PATH)
 export LDFLAGS="-L/usr/local/ssl/lib"
 
 make clean
-make OcsInventory-ng-agent
+make agent
 strip -p ocsinventory-agent
