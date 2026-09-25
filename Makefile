@@ -95,14 +95,11 @@ Q := @
 endif
 
 
-.PHONY: all agent check install uninstall clean OcsInventory-ng-agent
+.PHONY: all agent check install uninstall clean
 
 all: $(PROGRAM) $(TESTS)
 
 agent: $(PROGRAM)
-
-# Kept for compatibility with existing build scripts
-OcsInventory-ng-agent: $(PROGRAM)
 
 $(PROGRAM): $(COMMON_OBJS) $(MAIN_OBJ)
 	@echo "  LD      $@"
