@@ -42,7 +42,7 @@ WARNINGS := -Wall
 PROJECT_WARNINGS := $(WARNINGS) -Wextra -Wno-unused-parameter
 
 override CPPFLAGS += -I. -Ilibs -Ilibs/civetweb-1.16/include
-override CXXFLAGS += -std=c++17
+override CXXFLAGS += -std=c++11
 LDLIBS += -lz -lssl -lcrypto -ldl -lpthread
 
 # Put every function and variable in its own section, so that the

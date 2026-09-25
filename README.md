@@ -38,8 +38,8 @@ The application gathers information about:
 
 Ensure the following components are installed:
 
-* GCC or Clang with C++ support
-* OpenSSL
+* A C++11 compiler: GCC 5 or later, or Clang
+* OpenSSL 1.1.0 or later
 * zlib
 * make
 
