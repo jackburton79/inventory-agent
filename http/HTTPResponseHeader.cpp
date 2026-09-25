@@ -13,7 +13,8 @@
 HTTPResponseHeader::HTTPResponseHeader()
 	:
 	fCode(0),
-	fData(NULL)
+	fData(NULL),
+	fDataLength(0)
 {
 }
 
@@ -22,7 +23,8 @@ HTTPResponseHeader::HTTPResponseHeader(int code, const std::string& text,
 		const int majVersion, const int minVersion)
 	:
 	fCode(0),
-	fData(NULL)
+	fData(NULL),
+	fDataLength(0)
 {
 	SetStatusLine(code, text, majVersion, minVersion);
 }
@@ -84,6 +86,7 @@ HTTPResponseHeader::Clear()
 	fText = "";
 	delete[] fData;
 	fData = NULL;
+	fDataLength = 0;
 }
 
 
