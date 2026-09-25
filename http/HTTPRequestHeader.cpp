@@ -20,8 +20,10 @@ HTTPRequestHeader::HTTPRequestHeader()
 
 
 HTTPRequestHeader::HTTPRequestHeader(const HTTPRequestHeader& header)
+	:
+	HTTPHeader()
 {
-	//Full copy is done in the operator=()
+	//Full copy, base class included, is done in the operator=()
 
 	*this = header;
 }

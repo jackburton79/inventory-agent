@@ -75,6 +75,7 @@ PrintHelpAndExit()
 	std::cout << std::endl;
 	std::cout << "  -d, --daemon                       Runs continuously in background" << std::endl;
 	std::cout << "  -w, --wait <s>                     Wait for the specified amount of seconds before building the inventory" << std::endl;
+	std::cout << "                                     (not in daemon mode, where the first inventory runs after one minute)" << std::endl;
 	std::cout << std::endl;
 	std::cout << "      --no-ssl-check                 Don't check server ssl certificate" << std::endl;
 	std::cout << "      --logger <backend>             Specify error log backend (STDERR / SYSLOG)." << std::endl;
@@ -139,7 +140,12 @@ HandleArgs(int argc, char **argv)
 			sLongOptions, &optIndex)) != -1) {
 		switch (c) {
 			case 'c':
-				config->Load(optarg);
+				// The file may not exist yet: it will be created
+				// to store the device ID
+				if (!config->Load(optarg)) {
+					std::cerr << "Warning: cannot read configuration file "
+						<< optarg << std::endl;
+				}
 				break;
 			case 's':
 				config->SetServer(optarg);
@@ -162,7 +168,7 @@ HandleArgs(int argc, char **argv)
 				verbose = true;
 				break;
 			case 'w':
-				config->SetVolatileKeyValue("waittime", optarg);
+				config->SetVolatileKeyValue(CONF_WAIT_TIME, optarg);
 				break;
 			case 0:
 			{

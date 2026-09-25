@@ -94,6 +94,9 @@ int main()
 	std::cout << "Volatile values" << std::endl;
 	config->SetVolatileKeyValue("volatilekey", "volatilevalue");
 	Check(config->KeyValue("volatilekey") == "volatilevalue", "volatile value");
+	config->SetVolatileKeyValue("TAG", "cli-tag");
+	Check(config->KeyValue("TAG") == "cli-tag",
+		"command line values should take precedence: " + config->KeyValue("TAG"));
 	config->SetServer("http://cli.example.com/ocs");
 	Check(config->ServerURL() == "http://cli.example.com/ocs",
 		"the command line server should take precedence: " + config->ServerURL());
@@ -110,7 +113,8 @@ int main()
 		"volatile values must not be saved");
 	Check(saved.find("deviceID=device-2017-01-01-00-00-00\n") != std::string::npos,
 		"device ID not saved");
-	Check(saved.find("TAG=office\n") != std::string::npos, "TAG not saved");
+	Check(saved.find("TAG=office\n") != std::string::npos,
+		"TAG from the file not saved (or overwritten by the command line one)");
 
 	std::cout << "File permissions" << std::endl;
 	::umask(022);
@@ -119,6 +123,60 @@ int main()
 	config->Save(confFile.c_str());
 	Check(FileMode(confFile) == 0644, "the mode of an existing file should be kept");
 
+	std::cout << "Comments and spaces" << std::endl;
+	const std::string commentedFile = std::string(dir) + "/commented.conf";
+	{
+		std::ofstream conf(commentedFile);
+		conf << "# Inventory agent configuration" << std::endl;
+		conf << std::endl;
+		conf << "  httpd-trust = 10.0.0.1, 10.0.0.2  " << std::endl;
+		conf << "; another comment" << std::endl;
+		conf << "   # indented comment=with equal sign" << std::endl;
+		conf << "password=se#cret" << std::endl;
+		conf << "crlf=value\r" << std::endl;
+		conf << " = no key" << std::endl;
+		conf << "dup=first" << std::endl;
+		conf << "dup=second" << std::endl;
+		conf << "# trailing comment" << std::endl;
+	}
+	Check(config->Load(commentedFile.c_str()), "Load() failed");
+	Check(config->KeyValue("httpd-trust") == "10.0.0.1, 10.0.0.2",
+		"spaces around key and value: '" + config->KeyValue("httpd-trust") + "'");
+	Check(config->KeyValue("# Inventory agent configuration").empty(), "comment parsed as key");
+	Check(config->KeyValue("# indented comment").empty(), "indented comment parsed as key");
+	Check(config->KeyValue("password") == "se#cret", "'#' inside a value must be kept");
+	Check(config->KeyValue("crlf") == "value", "CRLF line ending: '" + config->KeyValue("crlf") + "'");
+	Check(config->KeyValue("").empty(), "empty key");
+	Check(config->KeyValue("dup") == "second", "the last duplicate should win");
+	Check(!config->Load((std::string(dir) + "/missing.conf").c_str()),
+		"Load() of a missing file should fail");
+
+	std::cout << "Save keeps comments and order" << std::endl;
+	config->SetKeyValue("dup", "updated");
+	config->SetKeyValue("newkey", "newvalue");
+	Check(config->Save(commentedFile.c_str()), "Save() failed");
+	std::string content = ReadFile(commentedFile);
+	size_t header = content.find("# Inventory agent configuration\n\n");
+	size_t trust = content.find("  httpd-trust = 10.0.0.1, 10.0.0.2  \n");
+	size_t comment = content.find("; another comment\n");
+	size_t dup = content.find("dup=updated\n");
+	size_t trailing = content.find("# trailing comment\n");
+	size_t newKey = content.find("newkey=newvalue\n");
+	Check(header == 0, "leading comment and empty line not kept");
+	Check(trust != std::string::npos, "unchanged line should be kept as is");
+	Check(comment != std::string::npos && comment > trust, "comment not kept in place");
+	Check(dup != std::string::npos && dup < trailing, "changed value not updated in place");
+	Check(content.find("dup=second") == std::string::npos
+		&& content.find("dup=first") == std::string::npos, "stale duplicate values kept");
+	Check(newKey != std::string::npos && newKey > trailing, "new key not appended");
+	Check(content.find("cli.example.com") == std::string::npos,
+		"the command line server must not be saved");
+
+	std::cout << "Save is stable" << std::endl;
+	config->Save(commentedFile.c_str());
+	Check(ReadFile(commentedFile) == content, "saving twice changed the file");
+
+	::unlink(commentedFile.c_str());
 	::unlink(confFile.c_str());
 	::unlink(savedFile.c_str());
 	::unlink(newFile.c_str());

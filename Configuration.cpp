@@ -6,10 +6,13 @@
  */
 
 #include "Configuration.h"
+#include "Support.h"
 
 #include <algorithm>
 #include <iostream>
 #include <fstream>
+#include <set>
+#include <vector>
 
 #include <assert.h>
 #include <fcntl.h>
@@ -51,14 +54,17 @@ Configuration::Load(const char* fileName)
 	fConfigFileName = fileName;
 	try {
 		std::ifstream configFile(fileName);
+		if (!configFile.is_open())
+			return false;
 		std::string line;
+		std::string key;
+		std::string value;
 		while (std::getline(configFile, line)) {
-			size_t pos = line.find("=");
-			if (pos != std::string::npos) {
-				fValues[line.substr(0, pos)] = line.substr(pos + 1, std::string::npos);
-			}
+			if (_ParseLine(line, key, value))
+				fValues[key] = value;
 		}
 	} catch (...) {
+		return false;
 	}
 
 	return true;
@@ -76,14 +82,43 @@ Configuration::Save(const char* fileName)
 		::close(fd);
 
 	try {
-		std::ofstream configFile(fileName, std::ios_base::out);
-		for (const auto& value: fValues) {
-			configFile << value.first << "=" << value.second << std::endl;
+		// Keep the comments, the empty lines and the order of the
+		// existing file: only update the changed values, in place,
+		// and append the new ones
+		std::vector<std::string> lines;
+		std::set<std::string> written;
+		std::ifstream existingFile(fileName);
+		std::string line;
+		std::string key;
+		std::string value;
+		while (std::getline(existingFile, line)) {
+			if (_ParseLine(line, key, value)) {
+				if (written.count(key) > 0)
+					continue; // duplicate key, the value is already written
+				auto i = fValues.find(key);
+				if (i != fValues.end()) {
+					written.insert(key);
+					if (i->second != value)
+						line = key + "=" + i->second;
+				}
+			}
+			lines.push_back(line);
 		}
+		existingFile.close();
+
+		for (const auto& keyValue: fValues) {
+			if (written.count(keyValue.first) == 0)
+				lines.push_back(keyValue.first + "=" + keyValue.second);
+		}
+
+		std::ofstream configFile(fileName, std::ios_base::out | std::ios_base::trunc);
+		for (const std::string& outLine: lines)
+			configFile << outLine << std::endl;
+		configFile.close();
+		return !configFile.fail();
 	} catch (...) {
 		return false;
 	}
-	return true;
 }
 
 
@@ -177,14 +212,15 @@ std::string
 Configuration::KeyValue(const char* key) const
 {
 	std::lock_guard<std::mutex> lock(fLock);
+	// Volatile values (set from the command line) take precedence
+	// over the ones read from the configuration file
 	std::map<std::string, std::string>::const_iterator i;
-	i = fValues.find(key);
-	if (i != fValues.end())
-		return i->second;
-
-	// Try volatile values
 	i = fVolatileValues.find(key);
 	if (i != fVolatileValues.end())
+		return i->second;
+
+	i = fValues.find(key);
+	if (i != fValues.end())
 		return i->second;
 
 	return "";
@@ -276,6 +312,26 @@ Configuration::SetUseCurrentTimeInDeviceID(bool use)
 {
 	std::lock_guard<std::mutex> lock(fLock);
 	fValues[kUseCurrentTimeInDeviceID] = _BooleanToString(use);
+}
+
+
+/* static */
+bool
+Configuration::_ParseLine(const std::string& line, std::string& key, std::string& value)
+{
+	// Format: "key = value". Empty lines and lines
+	// starting with '#' or ';' are ignored.
+	std::string string = trimmed(line);
+	if (string.empty() || string[0] == '#' || string[0] == ';')
+		return false;
+
+	size_t pos = string.find('=');
+	if (pos == std::string::npos)
+		return false;
+
+	key = trimmed(string.substr(0, pos));
+	value = trimmed(string.substr(pos + 1));
+	return !key.empty();
 }
 
 

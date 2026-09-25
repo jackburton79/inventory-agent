@@ -99,10 +99,12 @@ AgentService::Run()
 	fSchedulerThread =
 		std::thread(&AgentService::_SchedulingLoop, this);
 
-#if 1
-	// TODO: add configuration
-	// Start the web server
-	fServer->Start(62354, "");
+	int port = _WebServerPort();
+	if (port > 0) {
+		if (!fServer->Start(port, ""))
+			Logger::LogFormat(LOG_ERR, "AgentService: cannot start the web server on port %d", port);
+	} else
+		Logger::Log(LOG_INFO, "AgentService: web server disabled");
 
 	while (fRunning)
 		sleep(1);
@@ -121,7 +123,6 @@ AgentService::Run()
 
 	delete fServer;
 	fServer = nullptr;
-#endif
 }
 
 
@@ -129,6 +130,15 @@ bool
 AgentService::RunOneShot()
 {
 	const Configuration* config = Configuration::Get();
+
+	// -w/--wait: wait before building the inventory. Can be
+	// interrupted by SIGINT/SIGTERM, which clear fRunning.
+	fRunning = true;
+	for (int seconds = _WaitTime(); seconds > 0 && fRunning; seconds--)
+		::sleep(1);
+	if (!fRunning)
+		return false;
+
 	bool noSoftware = (config->KeyValue(CONF_NO_SOFTWARE) == CONF_VALUE_TRUE);
 	fAgent->RunInventory(noSoftware);
 	if (config->KeyValue(CONF_OUTPUT_STDOUT) == CONF_VALUE_TRUE) {
@@ -342,6 +352,52 @@ AgentService::_ShouldRunScheduledInventory()
 
 	fNextScheduledInventory = now + _ScheduleInterval();
 	return true;
+}
+
+
+/* static */
+int
+AgentService::_WaitTime()
+{
+	std::string waitString = Configuration::Get()->KeyValue(CONF_WAIT_TIME);
+	if (waitString.empty())
+		return 0;
+
+	try {
+		size_t end = 0;
+		int seconds = std::stoi(waitString, &end);
+		if (end == waitString.length() && seconds >= 0)
+			return seconds;
+	} catch (...) {
+	}
+
+	Logger::LogFormat(LOG_ERR, "AgentService: invalid wait time '%s', ignored", waitString.c_str());
+	return 0;
+}
+
+
+/* static */
+int
+AgentService::_WebServerPort()
+{
+	const int kDefaultPort = 62354;
+
+	// httpd-port=0 disables the web server
+	std::string portString = Configuration::Get()->KeyValue("httpd-port");
+	if (portString.empty())
+		return kDefaultPort;
+
+	try {
+		size_t end = 0;
+		int port = std::stoi(portString, &end);
+		if (end == portString.length() && port >= 0 && port <= 65535)
+			return port;
+	} catch (...) {
+	}
+
+	Logger::LogFormat(LOG_ERR, "AgentService: invalid httpd-port value '%s', using %d",
+		portString.c_str(), kDefaultPort);
+	return kDefaultPort;
 }
 
 
