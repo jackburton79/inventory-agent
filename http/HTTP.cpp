@@ -295,9 +295,9 @@ HTTP::_HandleConnection(const std::string& string)
 		std::string socketOptions;
 		if (Configuration::Get()->KeyValue("no_ssl_check") == CONF_VALUE_TRUE)
 			socketOptions.append("no_ssl_check");
+		// The socket is opened by Connect(), with the address family
+		// (IPv4 or IPv6) of the server
 		fSocket = SocketGetter().GetSocket(url.Protocol(), socketOptions);
-		if (fSocket->Open(AF_INET, SOCK_STREAM, 0) < 0)
-			throw errno;
 	} catch (const int& error) {
 		fLastError = error;
 		delete fSocket;

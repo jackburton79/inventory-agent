@@ -125,37 +125,64 @@ URL::_DecodeURLString(const std::string& string)
 		result = string.substr(endProtocol, std::string::npos);
 	}
 
+	// The authority ([user[:password]@]host[:port]) ends at the first '/'
+	size_t slashPos = result.find('/');
+	std::string authority = result.substr(0, slashPos);
+	if (slashPos != std::string::npos)
+		fPath = _NormalizedPath(result, slashPos);
+
 	// User/Password
-	size_t authPos = result.find("@");
+	size_t authPos = authority.rfind('@');
 	if (authPos != std::string::npos) {
-		size_t passPos = result.find(":");
-		if (passPos != std::string::npos) {
-			size_t passLen = authPos - passPos - 1;
-			fUsername = result.substr(0, passPos);
-			fPassword = result.substr(passPos + 1, passLen);
-		}
-		result = result.substr(authPos + 1, std::string::npos);
+		std::string userInfo = authority.substr(0, authPos);
+		size_t passPos = userInfo.find(':');
+		fUsername = userInfo.substr(0, passPos);
+		if (passPos != std::string::npos)
+			fPassword = userInfo.substr(passPos + 1);
+		authority = authority.substr(authPos + 1);
 	}
-	size_t portPos = result.find(":");
-	if (portPos != std::string::npos) {
-		fHost = result.substr(0, portPos);
-		size_t slashPos = result.find("/", portPos);
-		if (slashPos != std::string::npos)
-			fPath = _NormalizedPath(result, slashPos);
-		fPort = ::strtol(result.substr(portPos + 1, result.length()).c_str(),
-			NULL, 10);
+
+	std::string portString;
+	if (!authority.empty() && authority[0] == '[') {
+		// IPv6 address: [address]:port
+		size_t endBracket = authority.find(']');
+		fHost = authority.substr(1, endBracket == std::string::npos
+			? std::string::npos : endBracket - 1);
+		if (endBracket != std::string::npos && endBracket + 1 < authority.length()
+			&& authority[endBracket + 1] == ':')
+			portString = authority.substr(endBracket + 2);
 	} else {
-		if (fProtocol == "https")
-			fPort = 443;
-		else
-			fPort = 80;
-		size_t slashPos = result.find("/");
-		if (slashPos != std::string::npos) {
-			fHost = result.substr(0, slashPos);
-			fPath = _NormalizedPath(result, slashPos);
-		} else
-			fHost = result;
+		size_t portPos = authority.find(':');
+		fHost = authority.substr(0, portPos);
+		if (portPos != std::string::npos)
+			portString = authority.substr(portPos + 1);
 	}
+
+	if (!portString.empty())
+		fPort = ::strtol(portString.c_str(), NULL, 10);
+	else
+		fPort = DefaultPort();
+}
+
+
+int
+URL::DefaultPort() const
+{
+	return fProtocol == "https" ? 443 : 80;
+}
+
+
+std::string
+URL::HostHeader() const
+{
+	// Host header value (RFC 7230): IPv6 addresses go in brackets,
+	// the port is only needed when it's not the default one
+	std::string host = fHost;
+	if (host.find(':') != std::string::npos)
+		host = "[" + host + "]";
+	if (!host.empty() && fPort != DefaultPort())
+		host.append(":").append(std::to_string(fPort));
+	return host;
 }
 
 

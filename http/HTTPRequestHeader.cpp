@@ -108,9 +108,9 @@ HTTPRequestHeader::SetRequest(const std::string& method,
 	fMethod = method;
 	fURL = url;
 
-	std::string hostName = ::URL(url).Host();
-	if (hostName != "")
-		fValues[HTTPHost] = hostName;
+	std::string hostHeader = ::URL(url).HostHeader();
+	if (hostHeader != "")
+		fValues[HTTPHost] = hostHeader;
 }
 
 

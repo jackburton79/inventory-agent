@@ -22,48 +22,94 @@
 
 // Accepts one connection and, for each request received on it, sends
 // the next canned reply. The connection is closed after the last reply.
+// Listens on the IPv4 (127.0.0.1) or IPv6 (::1) loopback address.
 class CannedServer {
 public:
-	CannedServer(const std::vector<std::string>& replies)
+	CannedServer(const std::vector<std::string>& replies, int family = AF_INET)
 		:
 		fReplies(replies),
+		fFamily(family),
 		fListenFD(-1),
 		fPort(0)
 	{
-		fListenFD = ::socket(AF_INET, SOCK_STREAM, 0);
+		fListenFD = ::socket(family, SOCK_STREAM, 0);
 		int reuse = 1;
 		::setsockopt(fListenFD, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
 
-		struct sockaddr_in address;
-		::memset(&address, 0, sizeof(address));
-		address.sin_family = AF_INET;
-		address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-		address.sin_port = 0;
-		if (::bind(fListenFD, (struct sockaddr*)&address, sizeof(address)) != 0
+		struct sockaddr_storage address;
+		socklen_t length = _LoopbackAddress(family, address);
+		if (::bind(fListenFD, (struct sockaddr*)&address, length) != 0
 			|| ::listen(fListenFD, 1) != 0) {
 			std::cerr << "CannedServer: cannot listen" << std::endl;
 			::exit(2);
 		}
 
-		socklen_t length = sizeof(address);
 		::getsockname(fListenFD, (struct sockaddr*)&address, &length);
-		fPort = ntohs(address.sin_port);
+		fPort = family == AF_INET6
+			? ntohs(((struct sockaddr_in6*)&address)->sin6_port)
+			: ntohs(((struct sockaddr_in*)&address)->sin_port);
 
 		fThread = std::thread(&CannedServer::_Serve, this);
 	}
 
 	~CannedServer()
 	{
-		fThread.join();
+		Join();
 		::close(fListenFD);
+	}
+
+	// Waits until the server has sent all its replies
+	void Join()
+	{
+		if (fThread.joinable())
+			fThread.join();
+	}
+
+	int Port() const
+	{
+		return fPort;
 	}
 
 	std::string URL(const std::string& path = "/test") const
 	{
-		return "http://127.0.0.1:" + std::to_string(fPort) + path;
+		const std::string host = fFamily == AF_INET6 ? "[::1]" : "127.0.0.1";
+		return "http://" + host + ":" + std::to_string(fPort) + path;
+	}
+
+	// The requests received (headers only). Call Join() first.
+	const std::vector<std::string>& Requests() const
+	{
+		return fRequests;
+	}
+
+	static bool IsIPv6Available()
+	{
+		int fd = ::socket(AF_INET6, SOCK_STREAM, 0);
+		if (fd < 0)
+			return false;
+		struct sockaddr_storage address;
+		socklen_t length = _LoopbackAddress(AF_INET6, address);
+		bool available = ::bind(fd, (struct sockaddr*)&address, length) == 0;
+		::close(fd);
+		return available;
 	}
 
 private:
+	static socklen_t _LoopbackAddress(int family, struct sockaddr_storage& address)
+	{
+		::memset(&address, 0, sizeof(address));
+		if (family == AF_INET6) {
+			struct sockaddr_in6* address6 = (struct sockaddr_in6*)&address;
+			address6->sin6_family = AF_INET6;
+			address6->sin6_addr = in6addr_loopback;
+			return sizeof(struct sockaddr_in6);
+		}
+		struct sockaddr_in* address4 = (struct sockaddr_in*)&address;
+		address4->sin_family = AF_INET;
+		address4->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+		return sizeof(struct sockaddr_in);
+	}
+
 	void _Serve()
 	{
 		int fd = ::accept(fListenFD, NULL, NULL);
@@ -71,8 +117,10 @@ private:
 			return;
 
 		for (const std::string& reply : fReplies) {
-			if (!_ReadRequest(fd))
+			std::string request;
+			if (!_ReadRequest(fd, request))
 				break;
+			fRequests.push_back(request);
 			if (::write(fd, reply.data(), reply.length()) < 0)
 				break;
 		}
@@ -80,9 +128,8 @@ private:
 	}
 
 	// Reads the request headers (the tests don't send bodies)
-	static bool _ReadRequest(int fd)
+	static bool _ReadRequest(int fd, std::string& request)
 	{
-		std::string request;
 		char byte;
 		while (request.find("\r\n\r\n") == std::string::npos) {
 			if (::read(fd, &byte, 1) != 1)
@@ -93,6 +140,8 @@ private:
 	}
 
 	std::vector<std::string> fReplies;
+	std::vector<std::string> fRequests;
+	int fFamily;
 	int fListenFD;
 	int fPort;
 	std::thread fThread;
@@ -315,6 +364,91 @@ TestHugeChunk()
 }
 
 
+static void
+TestHostName()
+{
+	// Connect by name: the address is resolved with getaddrinfo()
+	const std::string name = "host name";
+	std::cout << name << std::endl;
+	CannedServer server({
+		"HTTP/1.1 200 OK\r\n"
+		"Content-Length: 2\r\n"
+		"\r\n"
+		"ok"
+	});
+
+	HTTP http;
+	const std::string url = "http://localhost:" + std::to_string(server.Port()) + "/test";
+	Check(http.Get(url) == 0, name, "Get() failed: " + http.ErrorString());
+	Check(Body(http.LastResponse()) == "ok", name, "wrong body");
+	server.Join();
+	Check(server.Requests().size() == 1
+		&& server.Requests()[0].find("\r\nHost: localhost:" + std::to_string(server.Port()) + "\r\n")
+			!= std::string::npos,
+		name, "wrong Host header");
+}
+
+
+static void
+TestUnresolvableHost()
+{
+	const std::string name = "unresolvable host";
+	std::cout << name << std::endl;
+	HTTP http;
+	Check(http.Get("http://nonexistent.invalid/test") != 0, name, "Get() should fail");
+}
+
+
+static void
+TestConnectionRefused()
+{
+	const std::string name = "connection refused";
+	std::cout << name << std::endl;
+	// Find a free port: bind to it and close it
+	int fd = ::socket(AF_INET, SOCK_STREAM, 0);
+	struct sockaddr_in address;
+	::memset(&address, 0, sizeof(address));
+	address.sin_family = AF_INET;
+	address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	socklen_t length = sizeof(address);
+	::bind(fd, (struct sockaddr*)&address, length);
+	::getsockname(fd, (struct sockaddr*)&address, &length);
+	::close(fd);
+
+	HTTP http;
+	Check(http.Get("http://127.0.0.1:" + std::to_string(ntohs(address.sin_port)) + "/test") != 0,
+		name, "Get() should fail");
+}
+
+
+static void
+TestIPv6()
+{
+	const std::string name = "IPv6";
+	std::cout << name << std::endl;
+	if (!CannedServer::IsIPv6Available()) {
+		std::cout << "  skipped: IPv6 is not available" << std::endl;
+		return;
+	}
+
+	CannedServer server({
+		"HTTP/1.1 200 OK\r\n"
+		"Content-Length: 4\r\n"
+		"\r\n"
+		"ipv6"
+	}, AF_INET6);
+
+	HTTP http;
+	Check(http.Get(server.URL()) == 0, name, "Get() failed: " + http.ErrorString());
+	Check(Body(http.LastResponse()) == "ipv6", name, "wrong body");
+	server.Join();
+	Check(server.Requests().size() == 1
+		&& server.Requests()[0].find("\r\nHost: [::1]:" + std::to_string(server.Port()) + "\r\n")
+			!= std::string::npos,
+		name, "wrong Host header");
+}
+
+
 int main()
 {
 	TestContentLength();
@@ -326,6 +460,10 @@ int main()
 	TestTruncatedBody();
 	TestHugeContentLength();
 	TestHugeChunk();
+	TestHostName();
+	TestUnresolvableHost();
+	TestConnectionRefused();
+	TestIPv6();
 
 	if (sFailures > 0) {
 		std::cout << sFailures << " check(s) failed" << std::endl;

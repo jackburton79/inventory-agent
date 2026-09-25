@@ -11,6 +11,8 @@
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 
+#include <arpa/inet.h>
+
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -22,6 +24,15 @@
 #include "Logger.h"
 
 static SSL_CTX* sSSLContext = NULL;
+
+
+static bool
+IsIPAddress(const std::string& string)
+{
+	struct in6_addr address;
+	return ::inet_pton(AF_INET, string.c_str(), &address) == 1
+		|| ::inet_pton(AF_INET6, string.c_str(), &address) == 1;
+}
 
 
 static const char*
@@ -93,14 +104,22 @@ SSLSocket::Close()
 int
 SSLSocket::Connect(const struct sockaddr *address, socklen_t addrLen)
 {
+	// Socket::Connect(hostName, port) calls us for every address of
+	// the host: free the connection of a previous attempt, if any
+	if (fSSLConnection != NULL) {
+		SSL_free(fSSLConnection);
+		fSSLConnection = NULL;
+	}
+
 	int status = Socket::Connect(address, addrLen);
 	if (status != 0)
-		return errno;
+		return status;
 
 	fSSLConnection = SSL_new(sSSLContext);
 	if (fSSLConnection == NULL)
 		return -1;
-	if (!HostName().empty())
+	// SNI must not be used with IP addresses (RFC 6066)
+	if (!HostName().empty() && !IsIPAddress(HostName()))
 		SSL_set_tlsext_host_name(fSSLConnection, HostName().c_str());
 
 	if (!fNoSSLCheck && !_SetupVerification())

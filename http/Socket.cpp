@@ -7,6 +7,8 @@
 
 #include "Socket.h"
 
+#include "Logger.h"
+
 #include <arpa/inet.h>
 #include <string>
 #include <sys/socket.h>
@@ -24,7 +26,9 @@
 
 Socket::Socket(const std::string& options)
 	:
-	fFD(-1)
+	fFD(-1),
+	fType(SOCK_STREAM),
+	fProtocol(0)
 {
 }
 
@@ -40,18 +44,16 @@ Socket::Open(int domain, int type, int protocol)
 {
 	if (fFD >= 0)
 		return -1;
-	fFD = ::socket(domain, type, protocol);
-	return fFD;
+	fType = type;
+	fProtocol = protocol;
+	return _OpenFD(domain);
 }
 
 
 void
 Socket::Close()
 {
-	if (fFD >= 0) {
-		::close(fFD);
-		fFD = -1;
-	}
+	_CloseFD();
 	fHostName = "";
 }
 
@@ -80,46 +82,115 @@ Socket::IsOpened() const
 void
 Socket::SetOption(int level, int name, const void *value, socklen_t len)
 {
-	::setsockopt(fFD, level, name, value, len);
+	SocketOption option;
+	option.level = level;
+	option.name = name;
+	if (value != NULL && len > 0) {
+		const char* bytes = static_cast<const char*>(value);
+		option.value.assign(bytes, bytes + len);
+	}
+
+	// Remember the option, replacing an older value
+	bool found = false;
+	for (SocketOption& existing : fOptions) {
+		if (existing.level == level && existing.name == name) {
+			existing = option;
+			found = true;
+			break;
+		}
+	}
+	if (!found)
+		fOptions.push_back(option);
+
+	if (fFD >= 0)
+		::setsockopt(fFD, level, name, value, len);
 }
 
 
 int
 Socket::Connect(const struct sockaddr *address, socklen_t addrLen)
 {
-	int result = ::connect(fFD, address, addrLen);
-	if (result != 0) {
-		std::cerr << "Connect failed: " << result << ", " << errno << std::endl;
+	if (::connect(fFD, address, addrLen) != 0)
 		return errno;
-	}
-	return result;
-}
-
-
-int
-Socket::Connect(const struct hostent* hostEnt, const int port)
-{
-	struct sockaddr_in serverAddr;
-	::memset(&serverAddr, 0, sizeof(serverAddr));
-	::memcpy(&serverAddr.sin_addr, hostEnt->h_addr, hostEnt->h_length);
-	serverAddr.sin_family = hostEnt->h_addrtype;
-	serverAddr.sin_port = (unsigned short)htons(port);
-
-	return Connect((const struct sockaddr*)&serverAddr, sizeof(serverAddr));
+	return 0;
 }
 
 
 int
 Socket::Connect(const char* hostName, const int port)
 {
-	const struct hostent* hostEnt = ::gethostbyname(hostName);
-	if (hostEnt == NULL) {
-		std::cerr << "Socket::Connect(): cannot resolve " << hostName << std::endl;
-		return h_errno;
+	struct addrinfo hints;
+	::memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = fType;
+	hints.ai_protocol = fProtocol;
+
+	const std::string service = std::to_string(port);
+	struct addrinfo* addresses = NULL;
+	int status = ::getaddrinfo(hostName, service.c_str(), &hints, &addresses);
+	if (status != 0) {
+		Logger::LogFormat(LOG_ERR, "Socket: cannot resolve %s: %s", hostName,
+			::gai_strerror(status));
+		return EHOSTUNREACH;
 	}
 
 	fHostName = hostName;
-	return Connect(hostEnt, port);
+
+	int error = EHOSTUNREACH;
+	for (struct addrinfo* address = addresses; address != NULL; address = address->ai_next) {
+		char addressString[INET6_ADDRSTRLEN] = "";
+		::getnameinfo(address->ai_addr, address->ai_addrlen, addressString,
+			sizeof(addressString), NULL, 0, NI_NUMERICHOST);
+
+		// (Re)open the socket with the family of this address
+		_CloseFD();
+		if (_OpenFD(address->ai_family) < 0) {
+			error = errno;
+			Logger::LogFormat(LOG_DEBUG, "Socket: cannot create a socket for %s: %s",
+				addressString, ::strerror(error));
+			continue;
+		}
+
+		error = Connect(address->ai_addr, address->ai_addrlen);
+		if (error == 0)
+			break;
+
+		Logger::LogFormat(LOG_DEBUG, "Socket: cannot connect to %s (%s) port %d: %s",
+			hostName, addressString, port, error > 0 ? ::strerror(error) : "protocol error");
+	}
+	::freeaddrinfo(addresses);
+
+	if (error != 0) {
+		_CloseFD();
+		Logger::LogFormat(LOG_ERR, "Socket: cannot connect to %s port %d", hostName, port);
+	}
+	return error;
+}
+
+
+int
+Socket::_OpenFD(int domain)
+{
+	fFD = ::socket(domain, fType, fProtocol);
+	if (fFD < 0)
+		return fFD;
+
+	for (const SocketOption& option : fOptions) {
+		::setsockopt(fFD, option.level, option.name,
+			option.value.empty() ? NULL : option.value.data(),
+			static_cast<socklen_t>(option.value.size()));
+	}
+	return fFD;
+}
+
+
+void
+Socket::_CloseFD()
+{
+	if (fFD >= 0) {
+		::close(fFD);
+		fFD = -1;
+	}
 }
 
 
