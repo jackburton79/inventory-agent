@@ -6,7 +6,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: make all
       run: make -j$(nproc) all
     - name: make check
@@ -21,7 +21,7 @@ jobs:
       ASAN_OPTIONS: detect_leaks=1
       UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: make all
       run: >
         make -j$(nproc) all
