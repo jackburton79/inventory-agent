@@ -1,6 +1,6 @@
 name: build
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -8,4 +8,27 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: make all
-      run: make all
+      run: make -j$(nproc) all
+    - name: make check
+      run: make check
+
+  sanitizers:
+    # Build with AddressSanitizer (including LeakSanitizer) and
+    # UndefinedBehaviorSanitizer, and fail on the first error
+    runs-on: ubuntu-latest
+    env:
+      SANITIZE_FLAGS: -O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined
+      ASAN_OPTIONS: detect_leaks=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+    - uses: actions/checkout@v6
+    - name: make all
+      run: >
+        make -j$(nproc) all
+        CFLAGS="$SANITIZE_FLAGS" CXXFLAGS="$SANITIZE_FLAGS" LDFLAGS="-fsanitize=address,undefined"
+    - name: make check
+      run: >
+        make check
+        CFLAGS="$SANITIZE_FLAGS" CXXFLAGS="$SANITIZE_FLAGS" LDFLAGS="-fsanitize=address,undefined"
+    - name: build an inventory
+      run: ./ocsinventory-agent --stdout --no-software > inventory.xml && grep -q "<REQUEST>" inventory.xml
