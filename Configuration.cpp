@@ -12,6 +12,9 @@
 #include <fstream>
 
 #include <assert.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 
 const static char* kServer = "server";
@@ -64,6 +67,12 @@ Configuration::Load(const char* fileName)
 bool
 Configuration::Save(const char* fileName)
 {
+	// The file may contain credentials: if it doesn't exist yet,
+	// create it readable only by the owner
+	int fd = ::open(fileName, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
+	if (fd >= 0)
+		::close(fd);
+
 	try {
 		std::ofstream configFile(fileName, std::ios_base::out);
 		for (const auto& value: fValues) {
@@ -107,7 +116,9 @@ Configuration::Print() const
 void
 Configuration::SetServer(const char* serverUrl)
 {
-	fValues[kServer] = serverUrl;
+	// Server set from the command line: don't store it in the
+	// configuration file, since it may contain credentials
+	fVolatileValues[kServer] = serverUrl;
 }
 
 
@@ -196,7 +207,12 @@ Configuration::SetDeviceID(const char* deviceID)
 std::string
 Configuration::ServerURL() const
 {
+	// The server specified on the command line wins
 	std::map<std::string, std::string>::const_iterator i;
+	i = fVolatileValues.find(kServer);
+	if (i != fVolatileValues.end())
+		return i->second;
+
 	i = fValues.find(kServer);
 	if (i != fValues.end())
 		return i->second;
@@ -208,7 +224,7 @@ Configuration::ServerURL() const
 bool
 Configuration::LocalInventory() const
 {
-	return fValues.find(kServer) == fValues.end();
+	return ServerURL().empty();
 }
 
 

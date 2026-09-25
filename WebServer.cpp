@@ -49,7 +49,7 @@ IsTrusted(const std::string& address)
 
 	// TODO: move to its own method
 	// The configured server is also trusted
-	URL serverURL(Configuration::Get()->KeyValue("server"));
+	URL serverURL(Configuration::Get()->ServerURL());
 	std::string hostname = serverURL.Host();
 	if (!serverURL.Host().empty()) {
 		struct addrinfo hints;
