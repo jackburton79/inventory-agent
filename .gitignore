@@ -8,3 +8,6 @@ test/processors-info-test
 test/urltest
 build/
 test/zlibtest
+test/httptest
+test/configtest
+test/edidtest
