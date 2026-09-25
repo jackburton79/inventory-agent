@@ -102,11 +102,20 @@ SSLSocket::Connect(const struct sockaddr *address, socklen_t addrLen)
 		return -1;
 	if (!HostName().empty())
 		SSL_set_tlsext_host_name(fSSLConnection, HostName().c_str());
+
+	if (!fNoSSLCheck && !_SetupVerification())
+		return -1;
+
 	SSL_set_fd(fSSLConnection, FD());
 	status = SSL_connect(fSSLConnection);
 	if (status != 1) {
 		int sslError = SSL_get_error(fSSLConnection, status);
 		Logger::LogFormat(LOG_ERR, "SSL_connect() failed: %s", SSLErrorString(sslError));
+		long verifyResult = SSL_get_verify_result(fSSLConnection);
+		if (!fNoSSLCheck && verifyResult != X509_V_OK) {
+			Logger::LogFormat(LOG_ERR, "TLS certificate validation failed for host %s: %s",
+				HostName().c_str(), X509_verify_cert_error_string(verifyResult));
+		}
 		// TODO: Pass the error to the upper layers ?
 		return -1;
 	}
@@ -164,6 +173,34 @@ SSLSocket::Write(const void* data, const size_t& length)
 }
 
 
+bool
+SSLSocket::_SetupVerification()
+{
+	// Let OpenSSL verify the certificate chain and the hostname
+	// (SAN/CN, including wildcards) during the handshake
+	SSL_set_verify(fSSLConnection, SSL_VERIFY_PEER, NULL);
+
+	const std::string hostName = HostName();
+	if (hostName.empty()) {
+		Logger::Log(LOG_ERR, "TLS: cannot verify certificate: unknown host name");
+		return false;
+	}
+
+	X509_VERIFY_PARAM* param = SSL_get0_param(fSSLConnection);
+	X509_VERIFY_PARAM_set_hostflags(param, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+	// If the host is an IP address, match it against the IP SAN entries,
+	// otherwise match the DNS name
+	if (X509_VERIFY_PARAM_set1_ip_asc(param, hostName.c_str()) != 1
+		&& X509_VERIFY_PARAM_set1_host(param, hostName.c_str(), 0) != 1) {
+		Logger::LogFormat(LOG_ERR, "TLS: cannot set expected host name %s",
+			hostName.c_str());
+		return false;
+	}
+
+	return true;
+}
+
+
 void
 SSLSocket::_SSLInit()
 {
@@ -176,87 +213,25 @@ SSLSocket::_SSLInit()
 }
 
 
-static bool
-VerifyHostname(X509 *cert, const std::string& hostname)
-{
-	// Check Subject Alternative Name (SAN) extension
-	STACK_OF(GENERAL_NAME) *sanNames = (STACK_OF(GENERAL_NAME) *)
-		X509_get_ext_d2i(cert, NID_subject_alt_name, NULL, NULL);
-
-	if (sanNames != NULL) {
-		for (int i = 0; i < sk_GENERAL_NAME_num(sanNames); i++) {
-			GENERAL_NAME *gn = sk_GENERAL_NAME_value(sanNames, i);
-			if (gn->type == GEN_DNS) {
-				const char *dnsName = reinterpret_cast<const char *>(ASN1_STRING_get0_data(gn->d.dNSName));
-				int dnsNameLen = ASN1_STRING_length(gn->d.dNSName);
-				if (dnsName != NULL && ::strncmp(dnsName, hostname.c_str(), dnsNameLen) == 0) {
-					sk_GENERAL_NAME_pop_free(sanNames, GENERAL_NAME_free);
-					return true;
-				}
-			}
-		}
-		sk_GENERAL_NAME_pop_free(sanNames, GENERAL_NAME_free);
-	}
-
-	// Fall back to checking Common Name (CN)
-	X509_NAME *subject = X509_get_subject_name(cert);
-	if (subject != NULL) {
-		char cn[256] = {0};
-		X509_NAME_get_text_by_NID(subject, NID_commonName, cn, sizeof(cn) - 1);
-		if (::strcmp(cn, hostname.c_str()) == 0)
-			return true;
-	}
-
-	return false;
-}
-
-
 bool
 SSLSocket::_CheckCertificate()
 {
+	// Chain, validity period and hostname are verified by OpenSSL
+	// during the handshake (see Connect()). Double check the result here.
 	X509 *cert = SSL_get_peer_certificate(fSSLConnection);
-	if (cert == NULL)
+	if (cert == NULL) {
+		Logger::LogFormat(LOG_ERR, "TLS: no certificate presented by host %s",
+			HostName().c_str());
 		return false;
+	}
+	X509_free(cert);
 
-	// Verify the certificate chain
 	long verifyResult = SSL_get_verify_result(fSSLConnection);
 	if (verifyResult != X509_V_OK) {
 		Logger::LogFormat(LOG_ERR, "TLS certificate validation failed for host %s: %s",
 			HostName().c_str(), X509_verify_cert_error_string(verifyResult));
-		X509_free(cert);
 		return false;
 	}
 
-	// Check if certificate is expired
-	time_t now = time(NULL);
-	ASN1_TIME *notBefore = X509_get_notBefore(cert);
-	ASN1_TIME *notAfter = X509_get_notAfter(cert);
-	if (notBefore == NULL || notAfter == NULL) {
-		X509_free(cert);
-		return false;
-	}
-
-	// Check if we're within the validity period
-	if (X509_cmp_time(notBefore, &now) > 0) {
-		// Certificate not yet valid
-		X509_free(cert);
-		return false;
-	}
-
-	if (X509_cmp_time(notAfter, &now) < 0) {
-		// Certificate has expired
-		X509_free(cert);
-		return false;
-	}
-
-	// Optional: Verify hostname matches certificate CN or SAN
-	if (!HostName().empty()) {
-		if (!VerifyHostname(cert, HostName())) {
-			X509_free(cert);
-			return false;
-		}
-	}
-
-	X509_free(cert);
 	return true;
 }
