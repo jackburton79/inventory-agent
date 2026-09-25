@@ -10,3 +10,4 @@ build/
 test/zlibtest
 test/httptest
 test/configtest
+test/edidtest

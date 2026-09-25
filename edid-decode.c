@@ -1120,8 +1120,10 @@ static unsigned char *extract_edid(int fd)
 	if (ret == NULL)
 		return NULL;
 
+	/* Always leave room for the NUL terminator: the buffer is parsed
+	   with string functions below */
 	for (;;) {
-		i = read(fd, ret + len, size - len);
+		i = read(fd, ret + len, size - len - 1);
 		if (i < 0) {
 			free(ret);
 			return NULL;
@@ -1129,7 +1131,7 @@ static unsigned char *extract_edid(int fd)
 		if (i == 0)
 			break;
 		len += i;
-		if (len == size) {
+		if (len == size - 1) {
 			char *t;
 			size <<= 1;
 			t = realloc(ret, size);
@@ -1139,6 +1141,14 @@ static unsigned char *extract_edid(int fd)
 			}
 			ret = t;
 		}
+	}
+	ret[len] = '\0';
+
+	/* An EDID is at least 128 bytes long, in any format. This also
+	   rejects the empty edid files of disconnected outputs in /sys */
+	if (len < 128) {
+		free(ret);
+		return NULL;
 	}
 
 	start = strstr(ret, "EDID_DATA:");
@@ -1352,13 +1362,14 @@ static int edid_from_file(const char *from_file, struct edid_info* info)
 	}
 
 	edid = extract_edid(fd);
+	if (fd != 0)
+		close(fd);
 	if (!edid) {
 		return -1;
 	}
-	if (fd != 0)
-		close(fd);
 
-	if (!edid || memcmp(edid, "\x00\xFF\xFF\xFF\xFF\xFF\xFF\x00", 8)) {
+	if (memcmp(edid, "\x00\xFF\xFF\xFF\xFF\xFF\xFF\x00", 8)) {
+		free(edid);
 		return -1;
 	}
 
