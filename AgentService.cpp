@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <fcntl.h>
 #include <iomanip>
 #include <mutex>
 #include <sstream>
@@ -36,9 +37,22 @@ Daemonize()
 	if (sid < 0)
 		::exit(1);
 
-	::close(STDIN_FILENO);
-	::close(STDOUT_FILENO);
-	::close(STDERR_FILENO);
+	// Redirect the standard descriptors to /dev/null instead of just
+	// closing them: otherwise the next opened sockets would get fds 0-2,
+	// and any stray write to stdout/stderr would end up on the network
+	int nullFD = ::open("/dev/null", O_RDWR);
+	if (nullFD < 0) {
+		::close(STDIN_FILENO);
+		::close(STDOUT_FILENO);
+		::close(STDERR_FILENO);
+		return;
+	}
+
+	::dup2(nullFD, STDIN_FILENO);
+	::dup2(nullFD, STDOUT_FILENO);
+	::dup2(nullFD, STDERR_FILENO);
+	if (nullFD > STDERR_FILENO)
+		::close(nullFD);
 }
 
 
