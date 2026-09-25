@@ -29,6 +29,7 @@ public:
 
 private:
 	void _DecodeURLString(const std::string& string);
+	static std::string _NormalizedPath(const std::string& string, size_t slashPos);
 
 	std::string fURLString;
 	std::string fProtocol;

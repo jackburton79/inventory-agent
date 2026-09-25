@@ -140,10 +140,8 @@ URL::_DecodeURLString(const std::string& string)
 	if (portPos != std::string::npos) {
 		fHost = result.substr(0, portPos);
 		size_t slashPos = result.find("/", portPos);
-		if (slashPos != std::string::npos) {
-			size_t endSlash = result.find_first_not_of("/", slashPos);
-			fPath = result.substr(endSlash -1, std::string::npos);
-		}
+		if (slashPos != std::string::npos)
+			fPath = _NormalizedPath(result, slashPos);
 		fPort = ::strtol(result.substr(portPos + 1, result.length()).c_str(),
 			NULL, 10);
 	} else {
@@ -153,10 +151,21 @@ URL::_DecodeURLString(const std::string& string)
 			fPort = 80;
 		size_t slashPos = result.find("/");
 		if (slashPos != std::string::npos) {
-			size_t endSlash = result.find_first_not_of("/", slashPos);
 			fHost = result.substr(0, slashPos);
-			fPath = result.substr(endSlash - 1, std::string::npos);
+			fPath = _NormalizedPath(result, slashPos);
 		} else
 			fHost = result;
 	}
+}
+
+
+/* static */
+std::string
+URL::_NormalizedPath(const std::string& string, size_t slashPos)
+{
+	// Collapse the leading slashes into one
+	size_t endSlash = string.find_first_not_of("/", slashPos);
+	if (endSlash == std::string::npos)
+		return "/";
+	return string.substr(endSlash - 1, std::string::npos);
 }
