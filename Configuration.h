@@ -57,6 +57,8 @@ private:
 	Configuration();
 	~Configuration();
 
+	static bool _ParseLine(const std::string& line, std::string& key,
+		std::string& value);
 	static std::string _BooleanToString(bool value);
 	static bool _StringToBoolean(const std::string& string);
 

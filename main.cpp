@@ -139,7 +139,12 @@ HandleArgs(int argc, char **argv)
 			sLongOptions, &optIndex)) != -1) {
 		switch (c) {
 			case 'c':
-				config->Load(optarg);
+				// The file may not exist yet: it will be created
+				// to store the device ID
+				if (!config->Load(optarg)) {
+					std::cerr << "Warning: cannot read configuration file "
+						<< optarg << std::endl;
+				}
 				break;
 			case 's':
 				config->SetServer(optarg);
