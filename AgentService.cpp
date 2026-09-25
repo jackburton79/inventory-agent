@@ -105,6 +105,10 @@ AgentService::Run()
 	while (fRunning)
 		sleep(1);
 
+	// Wake up the inventory thread, in case the stop was
+	// requested from a signal handler
+	Stop();
+
 	if (fInventoryThread.joinable())
 		fInventoryThread.join();
 
@@ -147,6 +151,15 @@ AgentService::Stop()
 	}
 
 	fCondition.notify_all();
+}
+
+
+void
+AgentService::RequestStop()
+{
+	static_assert(std::atomic_bool::is_always_lock_free,
+		"std::atomic_bool must be lock free to be used in a signal handler");
+	fRunning = false;
 }
 
 

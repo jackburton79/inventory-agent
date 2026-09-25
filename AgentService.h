@@ -26,6 +26,8 @@ public:
 	void RunOneShot();
 
 	void Stop();
+	// Async-signal-safe: only flags the service for termination
+	void RequestStop();
 
 	AgentStatus Status() const;
 	std::string StatusString() const;
