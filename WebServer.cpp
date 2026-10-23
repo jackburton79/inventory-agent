@@ -216,7 +216,7 @@ WebServer::StatusHandler(mg_connection* conn, void* cbdata)
 	std::string html = std::string("status: ") + thisPointer->fAgentService.StatusString();
 
 	mg_send_http_ok(conn, "text/plain", html.length());
-	mg_printf(conn, html.c_str(), html.length());
+	mg_write(conn, html.c_str(), html.length());
 
 	return 200;
 }
