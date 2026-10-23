@@ -18,8 +18,9 @@
 bool
 operator<(const user_entry& A, const user_entry& B)
 {
-	// TODO: Also compare domain
-	return A.login.compare(B.login);
+	if (A.login != B.login)
+		return A.login < B.login;
+	return A.logindomain < B.logindomain;
 }
 
 
