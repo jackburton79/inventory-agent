@@ -102,10 +102,16 @@ ProcReader::underflow()
 	if (gptr() < egptr())
 		return traits_type::to_int_type(*gptr());
 
-	size_t len = ::read(fFD, eback(), sizeof(char_type) * 512);
-	setg(eback(), eback(), eback() + sizeof(char_type) * len);
-	if (len == 0)
+	ssize_t len;
+	do {
+		len = ::read(fFD, eback(), sizeof(char_type) * 512);
+	} while (len < 0 && errno == EINTR);
+
+	// End of file, or a read error: nothing more to read
+	if (len <= 0)
 		return traits_type::eof();
+
+	setg(eback(), eback(), eback() + len);
 	return traits_type::to_int_type(*gptr());
 }
 
