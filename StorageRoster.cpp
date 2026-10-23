@@ -13,6 +13,19 @@
 #include <istream>
 
 
+// A fixed-width column of a /proc/scsi/scsi line. Safe on short lines.
+static std::string
+Column(const std::string& line, size_t position, size_t length)
+{
+	if (position >= line.length())
+		return "";
+
+	std::string column = line.substr(position, length);
+	trim(column);
+	return column;
+}
+
+
 StorageRoster::StorageRoster()
 {
 	_ReadStoragesInfo();
@@ -42,14 +55,12 @@ StorageRoster::_ReadStoragesInfo()
 				break;	
 
 			storage_info info;
-			info.manufacturer = vendorLine.substr(10, 9);
-			trim(info.manufacturer);
-			info.model = vendorLine.substr(26, 17); 
-			trim(info.model);
+			info.manufacturer = Column(vendorLine, 10, 9);
+			info.model = Column(vendorLine, 26, 17); 
 			// TODO: Name = Model ?
 			info.name = info.model;
-			info.type = typeLine.substr(10, 26);
-			trim(info.type); 
+			info.type = Column(typeLine, 10, 26);
+
 			fItems.push_back(info);
 		}
 	} catch (...) {
