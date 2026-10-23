@@ -225,9 +225,10 @@ Socket::Write(const void* data, const size_t& length)
 		static_cast<const char*>(data);
 	size_t totalWritten = 0;
 	while (totalWritten < length) {
-		ssize_t bytesWritten = ::write(fFD, ptr + totalWritten, length - totalWritten);
-		if (bytesWritten < 0) {
-			if (errno == EINTR)
+		ssize_t bytesWritten = ::send(fFD, ptr + totalWritten,
+				length - totalWritten, MSG_NOSIGNAL);
+		if (bytesWritten <= 0) {
+			if (bytesWritten < 0 && errno == EINTR)
 				continue;
 
 			return totalWritten;

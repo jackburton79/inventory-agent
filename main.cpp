@@ -235,6 +235,9 @@ main(int argc, char **argv)
 
 		::signal(SIGINT, SignalHandler);
 		::signal(SIGTERM, SignalHandler);
+		// A write on a socket closed by the server must fail with EPIPE,
+		// not kill the process (this also covers the SSL sockets)
+		::signal(SIGPIPE, SIG_IGN);
 
 		const Configuration* config = Configuration::Get();
 		if (config->KeyValue("DAEMONIZE") == CONF_VALUE_TRUE)
