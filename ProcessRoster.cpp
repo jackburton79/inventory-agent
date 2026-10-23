@@ -32,10 +32,14 @@ RunningProcessesList::RunningProcessesList()
 		while ((entry = ::readdir(dir)) != NULL) {
 			std::string procPid = entry->d_name;
 			if (IsNumber(procPid)) {
-				std::string fullName = "/proc/";
-				fullName.append(procPid);
 				process_info info;
-				_ReadProcessInfo(info, procPid);
+				try {
+					_ReadProcessInfo(info, procPid);
+				} catch (...) {
+					// Process could have exited between readdir
+					// and the above call
+					continue;
+				}
 				if (!info.cmdline.empty())
 					fItems.push_back(info);
 			}
@@ -58,7 +62,13 @@ RunningProcessesList::_ReadProcessInfo(process_info& info, const std::string& pi
 	info.pid = strtol(pid.c_str(), NULL, 10);
 	info.cmdline = ProcReader(("/proc/" + pid + std::string("/cmdline")).c_str()).ReadLine();
 
-	std::string loginUid = ProcReader(("/proc/" + pid + std::string("/loginuid")).c_str()).ReadLine();
+	std::string loginUid;
+	try {
+		loginUid = ProcReader(("/proc/" + pid + std::string("/loginuid")).c_str()).ReadLine();
+	} catch (...) {
+		// loginuid is not available on non-audit kernels,
+		// fallback to default user
+	}
 	const struct passwd* passwdStruct = getpwuid(strtoull(loginUid.c_str(), NULL, 10));
 	if (passwdStruct != NULL)
 		info.user = passwdStruct->pw_name;

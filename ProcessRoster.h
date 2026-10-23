@@ -15,13 +15,13 @@
 
 struct process_info {
 	std::string cmdline;
-	int cpu_usage;
-	int memory;
-	int pid;
+	int cpu_usage = 0;
+	int memory = 0;
+	int pid = 0;
 	// int started;
 	// int tty;
 	std::string user;
-	int virtualmem;
+	int virtualmem = 0;
 };
 
 
