@@ -281,24 +281,22 @@ void
 AgentService::_InventoryLoop()
 {
 	while (fRunning) {
-		std::unique_lock<std::mutex> lock(fMutex);
+		{
+			std::unique_lock<std::mutex> lock(fMutex);
+			fCondition.wait(lock,
+				[this]
+				{
+					return fInventoryRequested || !fRunning;
+				});
 
-		fCondition.wait(lock,
-			[this]
-			{
-				return fInventoryRequested || !fRunning;
-			});
+			if (!fRunning)
+				break;
 
-		if (!fRunning)
-			break;
-
-		fInventoryRequested = false;
-		fLastInventoryStart = std::chrono::system_clock::now();
-
-		lock.unlock();
-
-		try {
+			fInventoryRequested = false;
 			fInventoryRunning = true;
+			fLastInventoryStart = std::chrono::system_clock::now();
+		}
+		try {
 			bool noSoftware = (Configuration::Get()->KeyValue(CONF_NO_SOFTWARE) == CONF_VALUE_TRUE);
 			fAgent->RunInventory(noSoftware);
 			// TODO: What if we don't have a server url ?
@@ -307,10 +305,13 @@ AgentService::_InventoryLoop()
 				std::lock_guard<std::mutex> endLock(fMutex);
 				fLastInventoryEnd = std::chrono::system_clock::now();
 			}
-		} catch (std::exception& ex) {
+		} catch (const std::exception& ex) {
 			Logger::Log(LOG_ERR, ex.what());
-
+		} catch (...) {
+			Logger::Log(LOG_ERR, "AgentService: unknown error while running inventory");
 		}
+
+		std::lock_guard<std::mutex> lock(fMutex);
 		fInventoryRunning = false;
 	}
 }
