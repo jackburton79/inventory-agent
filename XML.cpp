@@ -64,7 +64,7 @@ XML::Serialize(const tinyxml2::XMLDocument& document, std::string& destination)
 	tinyxml2::XMLPrinter memoryPrinter;
 	document.Print(&memoryPrinter);
 
-	// CStrSize() includes the terminating NUL
+	// CStrSize() includes the terminating NULerrno
 	destination.assign(memoryPrinter.CStr(), memoryPrinter.CStrSize() - 1);
 
 	return true;
@@ -85,22 +85,24 @@ XML::Deserialize(const char* source, size_t sourceLen, tinyxml2::XMLDocument& do
 std::string
 XML::GetElementText(const tinyxml2::XMLNode& node, const std::string& elementName)
 {
-	std::string result;
 	const tinyxml2::XMLElement* element = GetElementByName(node, elementName);
-	if (element != NULL)
-		result = element->GetText();
-	return result;
+	if (element == NULL)
+		return "";
+
+	const char* text = element->GetText();
+	return text != NULL ? text : "";
 }
 
 
 std::string
 XML::GetFirstChildElementText(const tinyxml2::XMLElement* element, const std::string& elementName)
 {
-	std::string result;
 	const tinyxml2::XMLElement* foundElement = element->FirstChildElement(elementName.c_str());
-	if (foundElement != NULL)
-		result = foundElement->GetText();
-	return result;
+	if (foundElement == NULL)
+		return "";
+
+	const char* text = foundElement->GetText();
+	return text != NULL ? text : "";
 }
 
 
