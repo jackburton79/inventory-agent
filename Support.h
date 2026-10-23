@@ -5,10 +5,10 @@
  *      Author: Stefano Ceccherini
  */
 
-#ifndef SUPPORT_H_
-#define SUPPORT_H_
+#pragma once
 
 #include <algorithm>
+#include <cstring>
 #include <sstream>
 #include <stdio.h>
 #include <streambuf>
@@ -66,6 +66,13 @@ static inline std::string trimmed(const std::string& s) {
 }
 
 
+static inline bool
+starts_with(const std::string& line, const char* label)
+{
+	return line.compare(0, ::strlen(label), label) == 0;
+}
+
+
 static inline std::string int_to_string(int i) {
 	std::ostringstream stream;
 	stream << i;
@@ -77,5 +84,3 @@ static inline std::string uint_to_string(unsigned int i) {
 	stream << i;
 	return stream.str();
 }
-
-#endif /* SUPPORT_H_ */

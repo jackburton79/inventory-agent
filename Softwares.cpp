@@ -12,6 +12,21 @@
 #include <istream>
 
 
+// Value of a "Key        : value" line of "rpm -qi", starting at
+// the given column. Safe on short lines.
+static std::string
+FieldValue(const std::string& line, size_t maxLength = std::string::npos)
+{
+	const size_t kValueColumn = 13;
+	if (line.length() <= kValueColumn)
+		return "";
+
+	std::string value = line.substr(kValueColumn, maxLength);
+	trim(value);
+	return value;
+}
+
+
 Softwares::Softwares()
 {
 	_ReadSoftwaresInfo();
@@ -38,7 +53,7 @@ Softwares::_ReadSoftwaresInfo()
 		std::string version = "";
 
 		while (std::getline(iStreamRpms, string)) {
-			if (string.find("Name        :") != std::string::npos ) {
+			if (starts_with(string, "Name        :")) {
 				// new rpm, add last in defined
 				if (name != "") {
 					software_info info;
@@ -51,32 +66,21 @@ Softwares::_ReadSoftwaresInfo()
 					fItems.push_back(info);
 				}
 				// then update name
-				name = string.substr(13, 35);
-				trim(name);
-			} else if (string.find("Version     :") != std::string::npos) {
-				version = string.substr(13, 35);
-				trim(version);
-			} else if (string.find("Architecture:") != std::string::npos) {
-				strtmp = string.substr(13, 35);
-				trim(strtmp);
-				name = name + '.' + strtmp;
-			} else if (string.find("Release     :") != std::string::npos) {
-				strtmp = string.substr(13, 35);
-				trim(strtmp);
-				version = version + '-' + strtmp;
-			} else if (string.find("Install Date:") != std::string::npos) {
-				installdate = string.substr(13, 50);
-				trim(installdate);
-			} else if (string.find("Size        :") != std::string::npos) {
-				size = string.substr(13, 35);
-				trim(size);
-			} else if (string.find("Summary     :") != std::string::npos) {
-				comments = string.substr(13, 100);
-				trim(comments);
-			} else if (string.find("Vendor      :") != std::string::npos) {
-				strtmp = string.substr(13, 35);
-				trim(strtmp);
-				from = "RPM-" + strtmp;
+				name = FieldValue(string);
+			} else if (starts_with(string, "Version     :")) {
+				version = FieldValue(string);
+			} else if (starts_with(string, "Architecture:")) {
+				name = name + '.' + FieldValue(string);
+			} else if (starts_with(string, "Release     :")) {
+				version = version + '-' + FieldValue(string);
+			} else if (starts_with(string, "Install Date:")) {
+				installdate = FieldValue(string, 50);
+			} else if (starts_with(string, "Size        :")) {
+				size = FieldValue(string, 35);
+			} else if (starts_with(string, "Summary     :")) {
+				comments = FieldValue(string, 100);
+			} else if (starts_with(string, "Vendor      :")) {
+				from = "RPM-" + FieldValue(string, 35);
 			}
 		}
 		//last one ?
