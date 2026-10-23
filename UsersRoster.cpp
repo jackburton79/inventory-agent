@@ -57,8 +57,8 @@ UsersRoster::UsersRoster()
 
 	// Only insert one entry for user, otherwise GLPI rejects the inventory
 	std::set<user_entry>::const_iterator i;
-	for (i = userSet.begin(); i != userSet.end(); i++) {
-		fItems.push_back(*i);
+	for (const auto user : userSet) {
+		fItems.push_back(user);
 	}
 
 	Rewind();
