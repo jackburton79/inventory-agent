@@ -116,6 +116,7 @@ Inventory::GenerateDeviceID() const
 		deviceID = gComponents["SYSTEM"].fields["hostname"];
 
 	struct tm biosDate;
+	::memset(&biosDate, 0, sizeof(biosDate));
 	if (Configuration::Get()->UseCurrentTimeInDeviceID()) {
 		time_t rawtime = time(NULL);
 		localtime_r(&rawtime, &biosDate);
@@ -125,7 +126,12 @@ Inventory::GenerateDeviceID() const
 		// value, since we need a correct date for the device id
 		if (biosDateString.length() <= 1)
 			biosDateString = "01/01/2017";
-		::strptime(biosDateString.c_str(), "%m/%d/%Y", &biosDate);
+
+		if (::strptime(biosDateString.c_str(), "%m/%d/%Y", &biosDate) == NULL) {
+			// Fallback in case strptime fails
+			::memset(&biosDate, 0, sizeof(biosDate));
+			::strptime("01/01/2017", "%m/%d/%Y", &biosDate);
+		};
 	}
 
 	// DeviceID needs to have a date appended in this very format,
