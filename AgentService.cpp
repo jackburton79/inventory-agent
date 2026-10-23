@@ -30,7 +30,8 @@ Daemonize()
 	if (processID > 0)
 		::exit(0);
 
-	::umask(0);
+	// Don't create world writable files
+	::umask(022);
 	if (::chdir("/") < 0) {
 		; // Ignore
 	}
