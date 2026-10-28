@@ -121,6 +121,24 @@ int main()
 			"valid EDID", std::string("wrong serial number: ") + info.serial_number);
 	}
 
+	// The model and the serial number of the previous EDID must not
+	// leak into one which doesn't have them (i.e. a laptop panel)
+	std::vector<unsigned char> noDescriptors = edid;
+	::memset(&noDescriptors[0x5A], 0, 36);
+	noDescriptors[127] = 0;
+	unsigned char sum = 0;
+	for (size_t i = 0; i < 127; i++)
+		sum += noDescriptors[i];
+	noDescriptors[127] = static_cast<unsigned char>(0x100 - sum);
+	TestFile("EDID without name and serial number", fileName, edid, true);
+	TestFile("EDID without name and serial number", fileName, noDescriptors, true);
+	if (get_edid_info(fileName.c_str(), &info) == 0) {
+		Check(std::string(info.model).empty(), "EDID without name and serial number",
+			std::string("model of the previous EDID kept: ") + info.model);
+		Check(std::string(info.serial_number).empty(), "EDID without name and serial number",
+			std::string("serial number of the previous EDID kept: ") + info.serial_number);
+	}
+
 	std::vector<unsigned char> badHeader = edid;
 	badHeader[1] = 0x00;
 	TestFile("bad header", fileName, badHeader, false);

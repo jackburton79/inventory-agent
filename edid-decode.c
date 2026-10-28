@@ -1353,6 +1353,10 @@ static int edid_from_file(const char *from_file, struct edid_info* info)
 	int analog, i;
 
 	info->description[0] = '\0';
+	/* These are static and only set if the EDID has the matching descriptors:
+	 * forget the ones of the previously parsed EDID */
+	model_string[0] = '\0';
+	serial_string[0] = '\0';
 	
 	if (!from_file || !strcmp(from_file, "-")) {
 		fd = 0;
