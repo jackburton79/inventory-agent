@@ -26,7 +26,7 @@
 #include <unistd.h>
 
 
-const char* kVersion = "3.2.0";
+const char* kVersion = "3.2.1";
 
 Agent::Agent()
 	:
