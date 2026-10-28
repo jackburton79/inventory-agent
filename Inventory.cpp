@@ -1078,12 +1078,14 @@ Inventory::_AddSoftwaresInfo()
 void
 Inventory::_AddUsersInfo()
 {
-	tinyxml2::XMLElement* users = fDocument->NewElement("USERS");
-	fContent->LinkEndChild(users);
-
 	UsersRoster usersInfo;
 	user_entry userEntry;
 	while (usersInfo.GetNext(userEntry)) {
+		// One USERS element per user: the servers expect a single LOGIN
+		// and a single DOMAIN in each of them
+		tinyxml2::XMLElement* users = fDocument->NewElement("USERS");
+		fContent->LinkEndChild(users);
+
 		tinyxml2::XMLElement* domain = fDocument->NewElement("DOMAIN");
 		domain->LinkEndChild(fDocument->NewText(userEntry.logindomain.c_str()));
 		users->LinkEndChild(domain);
