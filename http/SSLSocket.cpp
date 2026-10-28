@@ -237,7 +237,7 @@ SSLSocket::_CheckCertificate()
 {
 	// Chain, validity period and hostname are verified by OpenSSL
 	// during the handshake (see Connect()). Double check the result here.
-	X509 *cert = SSL_get1_peer_certificate(fSSLConnection);
+	X509 *cert = SSL_get_peer_certificate(fSSLConnection);
 	if (cert == NULL) {
 		Logger::LogFormat(LOG_ERR, "TLS: no certificate presented by host %s",
 			HostName().c_str());
