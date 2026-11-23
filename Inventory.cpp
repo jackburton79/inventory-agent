@@ -1008,8 +1008,10 @@ Inventory::_AddProcessesInfo()
 		cpuUsage->LinkEndChild(fDocument->NewText(""));
 		process->LinkEndChild(cpuUsage);
 #endif
+		char memPercent[16];
+		snprintf(memPercent, sizeof(memPercent), "%.1f", processInfo.memory);
 		tinyxml2::XMLElement* mem = fDocument->NewElement("MEM");
-		mem->LinkEndChild(fDocument->NewText(int_to_string(processInfo.memory).c_str()));
+		mem->LinkEndChild(fDocument->NewText(memPercent));
 		process->LinkEndChild(mem);
 
 		tinyxml2::XMLElement* pid = fDocument->NewElement("PID");
@@ -1030,7 +1032,7 @@ Inventory::_AddProcessesInfo()
 		process->LinkEndChild(user);
 
 		tinyxml2::XMLElement* virtualMem = fDocument->NewElement("VIRTUALMEMORY");
-		virtualMem->LinkEndChild(fDocument->NewText(int_to_string(processInfo.virtualmem).c_str()));
+		virtualMem->LinkEndChild(fDocument->NewText(std::to_string(processInfo.virtualmem).c_str()));
 		process->LinkEndChild(virtualMem);
 	}
 

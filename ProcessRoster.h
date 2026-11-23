@@ -16,12 +16,12 @@
 struct process_info {
 	std::string cmdline;
 	int cpu_usage = 0;
-	int memory = 0;
+	float memory = 0;
 	int pid = 0;
 	// int started;
 	// int tty;
 	std::string user;
-	int virtualmem = 0;
+	long virtualmem = 0;
 };
 
 
@@ -31,6 +31,7 @@ public:
 	~RunningProcessesList();
 
 private:
+	static long _TotalMemory();
 	void _ReadProcessInfo(process_info& info, const std::string& pid);
 };
 

@@ -56,6 +56,29 @@ RunningProcessesList::~RunningProcessesList()
 
 
 
+long
+RunningProcessesList::_TotalMemory()
+{
+	static long total = -1;
+	if (total >= 0)
+		return total;
+	total = 0;
+	try {
+		ProcReader meminfo("/proc/meminfo");
+		std::istream stream(&meminfo);
+		std::string line;
+		while (std::getline(stream, line)) {
+			if (starts_with(line, "MemTotal:")) {
+				total = strtol(line.c_str() + 9, NULL, 10);
+				break;
+			}
+		}
+	} catch (...) {
+	}
+	return total;
+}
+
+
 void
 RunningProcessesList::_ReadProcessInfo(process_info& info, const std::string& pid)
 {
@@ -76,27 +99,31 @@ RunningProcessesList::_ReadProcessInfo(process_info& info, const std::string& pi
 		// TODO: Not nice. What to do in this case ?
 		info.user = "root";
 	}
-		// TODO: Refactor, too much duplicated code
+		// Resident and virtual sizes, in kB
+	long rss = 0;
+	long vsize = 0;
 	ProcReader status(("/proc/" + pid + std::string("/status")).c_str());
 
 	std::istream stream(&status);
 	std::string line;
 	try {
 		while (std::getline(stream, line)) {
-			if (line.find("VmSize") != std::string::npos) {
+			if (starts_with(line, "VmRSS:") || starts_with(line, "VmSize:")) {
 				size_t pos = line.find(":");
-				if (pos == std::string::npos)
-					continue;
-				std::string valueString = line.substr(pos + 2, std::string::npos);
-				info.memory = strtol(trim(valueString).c_str(), NULL, 10);
-			} else if (line.find("VmSwap") != std::string::npos) {
-				size_t pos = line.find(":");
-				if (pos == std::string::npos)
-					continue;
-				std::string valueString = line.substr(pos + 2, std::string::npos);
-				info.virtualmem = strtol(trim(valueString).c_str(), NULL, 10);
+				std::string valueString = line.substr(pos + 1);
+				long value = strtol(trim(valueString).c_str(), NULL, 10);
+				if (line[2] == 'R')
+					rss = value;
+				else
+					vsize = value;
 			}
 		}
 	} catch (...) {
 	}
+
+	// GLPI expects MEM as the percentage of physical memory used (like ps's %MEM),
+	// and VIRTUALMEMORY as the virtual size in kB (like ps's VSZ)
+	info.virtualmem = vsize;
+	long total = _TotalMemory();
+	info.memory = total > 0 ? (float)rss * 100.0f / (float)total : 0;
 }
