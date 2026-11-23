@@ -11,9 +11,11 @@
 #include "Support.h"
 
 #include <cstdlib>
+#include <cstring>
 #include <dirent.h>
 #include <iostream>
 #include <pwd.h>
+#include <unistd.h>
 
 
 static bool
@@ -79,11 +81,68 @@ RunningProcessesList::_TotalMemory()
 }
 
 
+long
+RunningProcessesList::_BootTime()
+{
+	static long bootTime = -1;
+	if (bootTime >= 0)
+		return bootTime;
+	bootTime = 0;
+	try {
+		ProcReader stat("/proc/stat");
+		std::istream stream(&stat);
+		std::string line;
+		while (std::getline(stream, line)) {
+			if (starts_with(line, "btime ")) {
+				bootTime = strtol(line.c_str() + 6, NULL, 10);
+				break;
+			}
+		}
+	} catch (...) {
+	}
+	return bootTime;
+}
+
+
+// Returns the process start time (seconds since epoch), or 0 if unknown
+time_t
+RunningProcessesList::_StartTime(const std::string& pid)
+{
+	long bootTime = _BootTime();
+	long ticks = ::sysconf(_SC_CLK_TCK);
+	if (bootTime <= 0 || ticks <= 0)
+		return 0;
+
+	std::string line;
+	try {
+		line = ProcReader(("/proc/" + pid + std::string("/stat")).c_str()).ReadLine();
+	} catch (...) {
+		return 0;
+	}
+
+	// The command name (2nd field) can contain spaces and parentheses:
+	// start parsing after the last ')'. Fields after it start from the 3rd
+	// (state), and starttime is the 22nd overall, so the 20th after ')'.
+	size_t pos = line.rfind(')');
+	if (pos == std::string::npos)
+		return 0;
+	const char* p = line.c_str() + pos + 1;
+	for (int field = 3; field < 22; field++) {
+		p = strchr(p + 1, ' ');
+		if (p == NULL)
+			return 0;
+	}
+	unsigned long long startTicks = strtoull(p + 1, NULL, 10);
+	return bootTime + startTicks / ticks;
+}
+
+
 void
 RunningProcessesList::_ReadProcessInfo(process_info& info, const std::string& pid)
 {
 	info.pid = strtol(pid.c_str(), NULL, 10);
 	info.cmdline = ProcReader(("/proc/" + pid + std::string("/cmdline")).c_str()).ReadLine();
+	info.started = _StartTime(pid);
 
 	std::string loginUid;
 	try {

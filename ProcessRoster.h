@@ -8,6 +8,7 @@
 #ifndef RUNNINGPROCESSES_H_
 #define RUNNINGPROCESSES_H_
 
+#include <ctime>
 #include <list>
 #include <string>
 
@@ -18,7 +19,7 @@ struct process_info {
 	int cpu_usage = 0;
 	float memory = 0;
 	int pid = 0;
-	// int started;
+	time_t started = 0;
 	// int tty;
 	std::string user;
 	long virtualmem = 0;
@@ -32,6 +33,8 @@ public:
 
 private:
 	static long _TotalMemory();
+	static long _BootTime();
+	static time_t _StartTime(const std::string& pid);
 	void _ReadProcessInfo(process_info& info, const std::string& pid);
 };
 

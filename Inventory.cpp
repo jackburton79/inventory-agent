@@ -1018,8 +1018,14 @@ Inventory::_AddProcessesInfo()
 		pid->LinkEndChild(fDocument->NewText(int_to_string(processInfo.pid).c_str()));
 		process->LinkEndChild(pid);
 
+		char startedString[32] = "";
+		if (processInfo.started > 0) {
+			struct tm startTime;
+			if (localtime_r(&processInfo.started, &startTime) != NULL)
+				strftime(startedString, sizeof(startedString), "%Y-%m-%d %H:%M:%S", &startTime);
+		}
 		tinyxml2::XMLElement* started = fDocument->NewElement("STARTED");
-		started->LinkEndChild(fDocument->NewText(""));
+		started->LinkEndChild(fDocument->NewText(startedString));
 		process->LinkEndChild(started);
 
 		tinyxml2::XMLElement* tty = fDocument->NewElement("TTY");
