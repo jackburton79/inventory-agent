@@ -15,6 +15,7 @@
 #include "ProcessRoster.h"
 #include "Screens.h"
 #include "Softwares.h"
+#include "Sounds.h"
 #include "StorageRoster.h"
 #include "Support.h"
 #include "UsersRoster.h"
@@ -177,6 +178,7 @@ Inventory::Build(bool noSoftware)
 		_AddUsersInfo();
 		_AddVideosInfo();
 		_AddMonitorsInfo();
+		_AddSoundsInfo();
 	} catch (...) {
 		// Something failed.
 	}
@@ -1135,6 +1137,32 @@ Inventory::_AddVideosInfo()
 		video->LinkEndChild(resolution);
 	}
 	Logger::Log(LOG_DEBUG, "\tAdded Video info!");
+}
+
+
+void
+Inventory::_AddSoundsInfo()
+{
+	SoundCards sounds;
+	sound_info info;
+	while (sounds.GetNext(info)) {
+		tinyxml2::XMLElement* sound = fDocument->NewElement("SOUNDS");
+		fContent->LinkEndChild(sound);
+
+		tinyxml2::XMLElement* description = fDocument->NewElement("DESCRIPTION");
+		description->LinkEndChild(fDocument->NewText(info.description.c_str()));
+		sound->LinkEndChild(description);
+
+		tinyxml2::XMLElement* manufacturer = fDocument->NewElement("MANUFACTURER");
+		manufacturer->LinkEndChild(fDocument->NewText(info.manufacturer.c_str()));
+		sound->LinkEndChild(manufacturer);
+
+		tinyxml2::XMLElement* name = fDocument->NewElement("NAME");
+		name->LinkEndChild(fDocument->NewText(info.name.c_str()));
+		sound->LinkEndChild(name);
+	}
+
+	Logger::Log(LOG_DEBUG, "\tAdded Sound cards info!");
 }
 
 

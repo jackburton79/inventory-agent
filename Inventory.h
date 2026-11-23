@@ -54,6 +54,7 @@ private:
 	void _AddUsersInfo();
 	void _AddVideosInfo();
 	void _AddMonitorsInfo();
+	void _AddSoundsInfo();
 
 	bool _WriteProlog(tinyxml2::XMLDocument& document) const;
 	bool _HandleResponse(HTTP& http);
