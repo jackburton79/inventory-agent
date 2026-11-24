@@ -27,8 +27,10 @@
 #include "http/URL.h"
 
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <unistd.h>
 
 #include "tinyxml2/tinyxml2.h"
@@ -154,34 +156,43 @@ Inventory::Build(bool noSoftware)
 	if (inventoryFormat.empty()) {
 		Logger::Log(LOG_WARNING, "No inventory format specified. Using lowest common denominator.");
 	}
-	try {
+	// A section failing (i.e. a missing component) must not drop the
+	// ones that follow: log the error and go on
+	auto addSection = [](const char* name, const std::function<void()>& section) {
+		try {
+			section();
+		} catch (const std::exception& ex) {
+			Logger::LogFormat(LOG_ERR, "Inventory: cannot add the %s info: %s", name, ex.what());
+		} catch (...) {
+			Logger::LogFormat(LOG_ERR, "Inventory: cannot add the %s info", name);
+		}
+	};
+
+	addSection("version", [this] {
 		// GLPI refuses the inventory if this field is missing, ocsinventory doesn't
 		// care if it's present, so we always add it
 		// TODO: get the real version of the agent
-
 		tinyxml2::XMLElement* versionClient = fDocument->NewElement("VERSIONCLIENT");
 		versionClient->LinkEndChild(fDocument->NewText(Agent::Version().c_str()));
 		fContent->LinkEndChild(versionClient);
+	});
 
-		_AddAccountInfo();
-		_AddBIOSInfo();
-		_AddOperatingSystemInfo();
-		_AddCPUsInfo();
-		_AddStoragesInfo();
-		_AddDrivesInfo();
-		_AddMemoriesInfo();
-		_AddHardwareInfo();
-		_AddNetworksInfo();
-		_AddProcessesInfo();
-		if (!noSoftware)
-			_AddSoftwaresInfo();
-		_AddUsersInfo();
-		_AddVideosInfo();
-		_AddMonitorsInfo();
-		_AddSoundsInfo();
-	} catch (...) {
-		// Something failed.
-	}
+	addSection("account", [this] { _AddAccountInfo(); });
+	addSection("BIOS", [this] { _AddBIOSInfo(); });
+	addSection("operating system", [this] { _AddOperatingSystemInfo(); });
+	addSection("CPUs", [this] { _AddCPUsInfo(); });
+	addSection("storages", [this] { _AddStoragesInfo(); });
+	addSection("drives", [this] { _AddDrivesInfo(); });
+	addSection("memories", [this] { _AddMemoriesInfo(); });
+	addSection("hardware", [this] { _AddHardwareInfo(); });
+	addSection("networks", [this] { _AddNetworksInfo(); });
+	addSection("processes", [this] { _AddProcessesInfo(); });
+	if (!noSoftware)
+		addSection("softwares", [this] { _AddSoftwaresInfo(); });
+	addSection("users", [this] { _AddUsersInfo(); });
+	addSection("videos", [this] { _AddVideosInfo(); });
+	addSection("monitors", [this] { _AddMonitorsInfo(); });
+	addSection("sounds", [this] { _AddSoundsInfo(); });
 
 	Logger::Log(LOG_DEBUG, "Building inventory... Done!");
 	return true;
